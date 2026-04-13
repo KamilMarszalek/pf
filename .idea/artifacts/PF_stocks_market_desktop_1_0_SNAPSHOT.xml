@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="PF_stocks_market-desktop-1.0-SNAPSHOT">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="PF_stocks_market-desktop-1.0-SNAPSHOT.jar">
+      <element id="module-output" name="PF_stocks_market.desktopMain" />
+    </root>
+  </artifact>
+</component>
