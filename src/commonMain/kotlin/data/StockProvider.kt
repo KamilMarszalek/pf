@@ -3,7 +3,11 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 fun createHttpClient(): HttpClient = HttpClient {
@@ -22,19 +26,40 @@ sealed class ApiResult<out T> {
     data class Failure(val message: String) : ApiResult<Nothing>()
 }
 
+@Serializable
+data class FmpError(
+    @SerialName("Error Message") val message: String
+)
+
 // Immutable helper to store client
 class StockProvider(
     private val client: HttpClient,
 ) {
-    private val baseUrl = "https://financialmodelingprep.com/api/v3"
+    private val baseUrl = "https://financialmodelingprep.com/stable"
+    private val json  = Json {ignoreUnknownKeys = true}
 
     // Higher-order function
     suspend fun fetchQuote(symbol: String): ApiResult<StockQuote> = try {
-        val response = client.get("$baseUrl/quote/$symbol?apikey=${AppConfig.API_KEY}")
-        val quotes = response.body<List<StockQuote>>()
+        val response = client.get(baseUrl) {
+            url {
+                appendPathSegments("profile")
+                parameters.append("symbol", symbol)
+                parameters.append("apikey", AppConfig.API_KEY)
+            }
+            println(url)
+        }
+        val bodyString = response.bodyAsText()
 
-        quotes.firstOrNull()?.let { ApiResult.Success(it) }
-            ?: ApiResult.Failure("Symbol $symbol not found")
+
+
+        if (response.status.value == 200) {
+            val quotes = json.decodeFromString<List<StockQuote>>(bodyString)
+            quotes.firstOrNull()?.let { ApiResult.Success(it) }
+                ?: ApiResult.Failure("Symbol $symbol not found")
+        } else {
+            val errorBody = runCatching { json.decodeFromString<FmpError>(bodyString) }.getOrNull()
+            ApiResult.Failure(errorBody?.message ?: "Server error ${response.status}")
+        }
     } catch (e: Exception) {
         ApiResult.Failure(e.message ?: "Unknown error")
     }

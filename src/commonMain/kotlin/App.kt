@@ -20,20 +20,23 @@ fun App() {
 
     // Side effect
     LaunchedEffect(Unit) {
-        state = stockProvider.fetchQuote("IUSQ.DE")
+        state = stockProvider.fetchQuote("NVDA")
     }
 
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             when (val current = state) {
                 null -> Text("Downloading data...")
-                is ApiResult.Failure -> Text("Error: ${current.message}", color = Color.Red)
+                is ApiResult.Failure -> {
+                    Text("Error: ${current.message}", color = Color.Red)
+                    println(current.message)
+                }
                 is ApiResult.Success -> {
                     val stock = current.data
                     Text("Ticker: ${stock.symbol}", style = MaterialTheme.typography.h5)
                     Text("Price: ${stock.price}")
-                    Text("Change percentage: ${stock.changesPercentage}%",
-                        color = if (stock.changesPercentage >= 0) Color.Green else Color.Red)
+                    Text("Change percentage: ${stock.changePercentage}%",
+                        color = if (stock.changePercentage >= 0) Color.Green else Color.Red)
                 }
             }
         }

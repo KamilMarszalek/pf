@@ -6,6 +6,6 @@ import kotlinx.serialization.Serializable
 data class StockQuote(
     val symbol: String,
     val price: Float,
-    val changesPercentage: Float,
+    val changePercentage: Float,
     val exchange: String
 )
