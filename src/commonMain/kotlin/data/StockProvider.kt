@@ -23,15 +23,18 @@ sealed class ApiResult<out T> {
 }
 
 // Immutable helper to store client
-class StockProvider(private val client: HttpClient, private val apiKey: String) {
+class StockProvider(
+    private val client: HttpClient,
+) {
+    private val baseUrl = "https://financialmodelingprep.com/api/v3"
 
     // Higher-order function
     suspend fun fetchQuote(symbol: String): ApiResult<StockQuote> = try {
-        val response = client.get("https://financialmodelingprep.com/api/v3/quote/$symbol?apikey=$apiKey")
+        val response = client.get("$baseUrl/quote/$symbol?apikey=${AppConfig.API_KEY}")
         val quotes = response.body<List<StockQuote>>()
 
         quotes.firstOrNull()?.let { ApiResult.Success(it) }
-            ?: ApiResult.Failure("Symbol not found")
+            ?: ApiResult.Failure("Symbol $symbol not found")
     } catch (e: Exception) {
         ApiResult.Failure(e.message ?: "Unknown error")
     }
