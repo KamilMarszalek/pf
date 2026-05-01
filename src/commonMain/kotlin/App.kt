@@ -12,6 +12,7 @@ import data.StockProvider
 import data.StockQuote
 import data.createHttpClient
 import indicators.exponentialMovingAverage
+import indicators.relativeStrengthIndex
 import indicators.simpleMovingAverage
 
 @Composable
@@ -40,6 +41,7 @@ fun App() {
                     val closes = candlesAscending.map {it.close}
                     val sma20 = simpleMovingAverage(closes, 20)
                     val ema20 = exponentialMovingAverage(closes, 20)
+                    val rsi14 = relativeStrengthIndex(closes, 14)
                     val latestCandle = candles.firstOrNull()
                     val oldestCandle = candles.lastOrNull()
 
@@ -49,6 +51,7 @@ fun App() {
                     Text("Latest close: ${latestCandle?.close}")
                     Text("Latest SMA20: ${sma20.lastOrNull { it != null }}")
                     Text("Latest EMA20: ${ema20.lastOrNull { it != null }}")
+                    Text("Latest RSI14: ${rsi14.lastOrNull { it != null }}")
                 }
             }
         }
