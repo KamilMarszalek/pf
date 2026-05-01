@@ -13,7 +13,7 @@ import data.createHttpClient
 
 @Composable
 fun App() {
-    val stockProvider = remember { StockProvider(createHttpClient()) }
+    val stockProvider = remember { StockProvider(createHttpClient(), AppConfig.API_KEY) }
 
     // Immutable state (on new state old one is overwritten)
     var state by remember { mutableStateOf<ApiResult<StockQuote>?>(null) }

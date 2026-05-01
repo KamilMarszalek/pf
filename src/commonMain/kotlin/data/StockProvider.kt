@@ -34,6 +34,7 @@ data class FmpError(
 // Immutable helper to store client
 class StockProvider(
     private val client: HttpClient,
+    private val apiKey: String,
 ) {
     private val baseUrl = "https://financialmodelingprep.com/stable"
     private val json  = Json {ignoreUnknownKeys = true}
@@ -44,7 +45,7 @@ class StockProvider(
             url {
                 appendPathSegments("profile")
                 parameters.append("symbol", symbol)
-                parameters.append("apikey", AppConfig.API_KEY)
+                parameters.append("apikey", apiKey)
             }
             println(url)
         }
@@ -69,7 +70,7 @@ class StockProvider(
             url {
                 appendPathSegments("historical-price-eod", "full")
                 parameters.append("symbol", symbol)
-                parameters.append("apikey", AppConfig.API_KEY)
+                parameters.append("apikey", apiKey)
             }
         }
         val bodyString = response.bodyAsText()
