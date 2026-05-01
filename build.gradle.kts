@@ -51,6 +51,12 @@ val fmpKey: String = run {
     props.getProperty("fmp.api.key") ?: System.getenv("FMP_API_KEY") ?: ""
 }
 
+println("Loaded FMP key length = ${fmpKey.length}")
+
+tasks.withType<JavaExec>().configureEach {
+    systemProperty("fmp.api.key", fmpKey)
+}
+
 compose.desktop {
     application {
         mainClass = "MainKt"
