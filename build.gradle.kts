@@ -35,6 +35,8 @@ kotlin {
                 implementation(libs.ktor.client.cio)
             }
         }
+
+        commonTest.dependencies { implementation(kotlin("test")) }
     }
 }
 
