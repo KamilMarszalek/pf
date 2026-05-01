@@ -63,4 +63,24 @@ class StockProvider(
     } catch (e: Exception) {
         ApiResult.Failure(e.message ?: "Unknown error")
     }
+
+    suspend fun fetchCandles(symbol: String): ApiResult<List<Candle>> = try {
+        val response = client.get(baseUrl) {
+            url {
+                appendPathSegments("historical-price-eod", "full")
+                parameters.append("symbol", symbol)
+                parameters.append("apikey", AppConfig.API_KEY)
+            }
+        }
+        val bodyString = response.bodyAsText()
+
+        if (response.status.value == 200) {
+            val candles = json.decodeFromString<List<Candle>>(bodyString)
+            ApiResult.Success(candles)
+        } else {
+            ApiResult.Failure("Server error ${response.status}")
+        }
+    } catch (e: Exception) {
+        ApiResult.Failure(e.message ?: "Unknown error")
+    }
 }
