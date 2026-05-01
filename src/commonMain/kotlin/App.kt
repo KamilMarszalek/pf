@@ -35,13 +35,17 @@ fun App() {
                 }
                 is ApiResult.Success -> {
                     val candles = current.data
-                    val closes = candles.map {it.close}
+                    val candlesAscending = candles.reversed()
+                    val closes = candlesAscending.map {it.close}
                     val sma20 = simpleMovingAverage(closes, 20)
-                    Text("Candles downloaded: ${candles.size}")
-                    Text("First candle date: ${candles.firstOrNull()?.date}")
-                    Text("Latest close: ${candles.firstOrNull()?.close}")
-                    Text("Latest SMA20: ${sma20.firstOrNull() {it != null}}")
+                    val latestCandle = candles.firstOrNull()
+                    val oldestCandle = candles.lastOrNull()
 
+                    Text("Candles downloaded: ${candles.size}")
+                    Text("Oldest candle date: ${oldestCandle?.date}")
+                    Text("Latest candle date: ${latestCandle?.date}")
+                    Text("Latest close: ${latestCandle?.close}")
+                    Text("Latest SMA20: ${sma20.lastOrNull { it != null }}")
                 }
             }
         }
