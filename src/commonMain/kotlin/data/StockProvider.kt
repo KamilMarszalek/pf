@@ -79,7 +79,8 @@ class StockProvider(
             val candles = json.decodeFromString<List<Candle>>(bodyString)
             ApiResult.Success(candles)
         } else {
-            ApiResult.Failure("Server error ${response.status}")
+            val errorBody = runCatching { json.decodeFromString<FmpError>(bodyString) }.getOrNull()
+            ApiResult.Failure(errorBody?.message ?: "Server error ${response.status}")
         }
     } catch (e: Exception) {
         ApiResult.Failure(e.message ?: "Unknown error")
