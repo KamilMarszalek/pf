@@ -1,3 +1,4 @@
+import analysis.analyzeCandles
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
@@ -14,45 +15,47 @@ import data.createHttpClient
 import indicators.exponentialMovingAverage
 import indicators.relativeStrengthIndex
 import indicators.simpleMovingAverage
+import ui.AppState
 
 @Composable
 fun App() {
     val stockProvider = remember { StockProvider(createHttpClient(), AppConfig.API_KEY) }
 
     // Immutable state (on new state old one is overwritten)
-    var state by remember { mutableStateOf<ApiResult<List<Candle>>?>(null) }
-
+    var state by remember { mutableStateOf<AppState>(AppState.Idle) }
     // Side effect
     LaunchedEffect(Unit) {
-        state = stockProvider.fetchCandles("AAPL")
+        state = AppState.Loading
+        state = when (val result = stockProvider.fetchCandles("AAPL")) {
+            is ApiResult.Success -> AppState.Success(analyzeCandles(result.data))
+            is ApiResult.Failure -> AppState.Error(result.message)
+        }
     }
 
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             when (val current = state) {
-                null -> Text("Downloading candles...")
-                is ApiResult.Failure -> {
-                    Text("Error: ${current.message}", color = Color.Red)
-                    println(current.message)
-                }
-                is ApiResult.Success -> {
-                    val candles = current.data
-                    val candlesAscending = candles.sortedBy { it.date }
-                    val closes = candlesAscending.map { it.close }
+                AppState.Idle -> Text("Enter ticker and click Analyze")
+                AppState.Loading -> Text("Downloading candles...")
 
-                    val oldestCandle = candlesAscending.firstOrNull()
-                    val latestCandle = candlesAscending.lastOrNull()
-                    val sma20 = simpleMovingAverage(closes, 20)
-                    val ema20 = exponentialMovingAverage(closes, 20)
-                    val rsi14 = relativeStrengthIndex(closes, 14)
+                is AppState.Error -> {
+                    Text("Error: ${current.message}", color = Color.Red)
+                }
+
+                is AppState.Success -> {
+                    val analysis = current.analysis
+                    val candles = analysis.candles
+
+                    val oldestCandle = candles.firstOrNull()
+                    val latestCandle = candles.lastOrNull()
 
                     Text("Candles downloaded: ${candles.size}")
                     Text("Oldest candle date: ${oldestCandle?.date}")
                     Text("Latest candle date: ${latestCandle?.date}")
                     Text("Latest close: ${latestCandle?.close}")
-                    Text("Latest SMA20: ${sma20.lastOrNull { it != null }}")
-                    Text("Latest EMA20: ${ema20.lastOrNull { it != null }}")
-                    Text("Latest RSI14: ${rsi14.lastOrNull { it != null }}")
+                    Text("Latest SMA20: ${analysis.sma20.lastOrNull { it != null }}")
+                    Text("Latest EMA20: ${analysis.ema20.lastOrNull { it != null }}")
+                    Text("Latest RSI14: ${analysis.rsi14.lastOrNull { it != null }}")
                 }
             }
         }
