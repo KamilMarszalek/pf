@@ -1,39 +1,73 @@
 import analysis.analyzeCandles
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material.Button
 import androidx.compose.ui.unit.dp
 import data.ApiResult
-import data.Candle
 import data.StockProvider
-import data.StockQuote
 import data.createHttpClient
-import indicators.exponentialMovingAverage
-import indicators.relativeStrengthIndex
-import indicators.simpleMovingAverage
+import kotlinx.coroutines.launch
 import ui.AppState
 
 @Composable
 fun App() {
+    var ticker by remember { mutableStateOf("AAPL")}
     val stockProvider = remember { StockProvider(createHttpClient(), AppConfig.API_KEY) }
-
+    val scope = rememberCoroutineScope()
     // Immutable state (on new state old one is overwritten)
     var state by remember { mutableStateOf<AppState>(AppState.Idle) }
-    // Side effect
-    LaunchedEffect(Unit) {
+
+    suspend fun loadAnalysis(symbol: String) {
         state = AppState.Loading
-        state = when (val result = stockProvider.fetchCandles("AAPL")) {
+
+        state = when (val result = stockProvider.fetchCandles(symbol)) {
             is ApiResult.Success -> AppState.Success(analyzeCandles(result.data))
             is ApiResult.Failure -> AppState.Error(result.message)
         }
     }
+    // Side effect
+    LaunchedEffect(Unit) {
+        loadAnalysis(ticker)
+    }
+
 
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
+            Row {
+                OutlinedTextField(
+                    value = ticker,
+                    onValueChange = { ticker = it.uppercase() },
+                    label = { Text("Ticker") },
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = {
+                        val symbol = ticker.trim().uppercase()
+
+                        if (symbol.isBlank()) {
+                            state = AppState.Error("Ticker cannot be empty")
+                            return@Button
+                        }
+
+                        scope.launch {
+                            loadAnalysis(symbol)
+                        }
+                    }
+                ) {
+                    Text("Analyze")
+                }
+            }
             when (val current = state) {
                 AppState.Idle -> Text("Enter ticker and click Analyze")
                 AppState.Loading -> Text("Downloading candles...")
