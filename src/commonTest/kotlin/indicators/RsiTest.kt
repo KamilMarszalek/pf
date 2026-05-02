@@ -40,6 +40,16 @@ class RsiTest {
     }
 
     @Test
+    fun `should return zero when there are no gains`() {
+        val result = relativeStrengthIndex(
+            values = listOf(4.0, 3.0, 2.0, 1.0),
+            period = 3
+        )
+
+        assertEquals(listOf(null, null, null, 0.0), result)
+    }
+
+    @Test
     fun `should return fifty when there are no gains or losses`() {
         val result = relativeStrengthIndex(
             values = listOf(2.0, 2.0, 2.0, 2.0),
