@@ -1,6 +1,7 @@
 package analysis
 
 import data.Candle
+import indicators.exponentialMovingAverage
 import indicators.relativeStrengthIndex
 import indicators.simpleMovingAverage
 
@@ -18,7 +19,7 @@ fun analyzeCandles(candles: List<Candle>): StockAnalysis {
     return StockAnalysis(
         candles = candlesAscending,
         sma20 = simpleMovingAverage(closes, 20),
-        ema20 = simpleMovingAverage(closes, 20),
+        ema20 = exponentialMovingAverage(closes, 20),
         rsi14 = relativeStrengthIndex(closes, 14),
     )
 }
