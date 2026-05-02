@@ -37,13 +37,14 @@ fun App() {
                 }
                 is ApiResult.Success -> {
                     val candles = current.data
-                    val candlesAscending = candles.reversed()
-                    val closes = candlesAscending.map {it.close}
+                    val candlesAscending = candles.sortedBy { it.date }
+                    val closes = candlesAscending.map { it.close }
+
+                    val oldestCandle = candlesAscending.firstOrNull()
+                    val latestCandle = candlesAscending.lastOrNull()
                     val sma20 = simpleMovingAverage(closes, 20)
                     val ema20 = exponentialMovingAverage(closes, 20)
                     val rsi14 = relativeStrengthIndex(closes, 14)
-                    val latestCandle = candles.firstOrNull()
-                    val oldestCandle = candles.lastOrNull()
 
                     Text("Candles downloaded: ${candles.size}")
                     Text("Oldest candle date: ${oldestCandle?.date}")
