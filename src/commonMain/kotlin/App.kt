@@ -20,7 +20,7 @@ import ui.AppState
 
 @Composable
 fun App() {
-    var ticker by remember { mutableStateOf("AAPL")}
+    var ticker by remember { mutableStateOf("")}
     val stockProvider = remember { StockProvider(createHttpClient(), AppConfig.API_KEY) }
     val scope = rememberCoroutineScope()
     // Immutable state (on new state old one is overwritten)
@@ -34,10 +34,10 @@ fun App() {
             is ApiResult.Failure -> AppState.Error(result.message)
         }
     }
-    // Side effect
-    LaunchedEffect(Unit) {
-        loadAnalysis(ticker)
-    }
+//    // Side effect
+//    LaunchedEffect(Unit) {
+//        loadAnalysis(ticker)
+//    }
 
     fun formatNullable(value: Double?): String = value?.let {"%.2f".format(it)} ?: "-"
     MaterialTheme {
