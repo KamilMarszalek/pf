@@ -39,7 +39,7 @@ fun App() {
         loadAnalysis(ticker)
     }
 
-
+    fun formatNullable(value: Double?): String = value?.let {"%.2f".format(it)} ?: "-"
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             Row {
@@ -88,12 +88,13 @@ fun App() {
                     Text("Candles downloaded: ${candles.size}")
                     Text("Oldest candle date: ${oldestCandle?.date}")
                     Text("Latest candle date: ${latestCandle?.date}")
-                    Text("Latest close: ${latestCandle?.close.let {"%.2f".format(it)}}")
-                    Text("Latest SMA20: ${analysis.sma20.lastOrNull { it != null }?.let{"%.2f".format(it)}}")
-                    Text("Latest EMA20: ${analysis.ema20.lastOrNull { it != null }?.let{"%.2f".format(it)}}")
-                    Text("Latest RSI14: ${analysis.rsi14.lastOrNull { it != null }.let{"%.2f".format(it)}}")
+                    Text("Latest close: ${formatNullable(latestCandle?.close)}")
+                    Text("Latest SMA20: ${formatNullable(analysis.sma20.lastOrNull { it != null })}")
+                    Text("Latest EMA20: ${formatNullable(analysis.ema20.lastOrNull { it != null })}")
+                    Text("Latest RSI14: ${formatNullable(analysis.rsi14.lastOrNull { it != null })}")
                 }
             }
         }
     }
 }
+
