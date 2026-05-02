@@ -19,11 +19,11 @@ class EmaTest {
     @Test
     fun `should calculate exponential moving average`() {
         val result = exponentialMovingAverage(
-            values = listOf(1.0, 2.0, 3.0, 4.0, 5.0),
+            values = listOf(10.0, 20.0, 15.0, 30.0, 25.0),
             period = 3
         )
 
-        assertEquals(listOf(null, null, 2.0, 3.0, 4.0), result)
+        assertEquals(listOf(null, null, 15.0, 22.5, 23.75), result)
     }
 
     @Test
