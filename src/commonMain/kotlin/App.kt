@@ -30,7 +30,7 @@ fun App() {
         state = AppState.Loading
 
         state = when (val result = stockProvider.fetchCandles(symbol)) {
-            is ApiResult.Success -> AppState.Success(analyzeCandles(result.data))
+            is ApiResult.Success -> AppState.Success(symbol,analyzeCandles(result.data))
             is ApiResult.Failure -> AppState.Error(result.message)
         }
     }
@@ -52,6 +52,7 @@ fun App() {
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Button(
+                    enabled = state !is AppState.Loading,
                     onClick = {
                         val symbol = ticker.trim().uppercase()
 
@@ -83,13 +84,14 @@ fun App() {
                     val oldestCandle = candles.firstOrNull()
                     val latestCandle = candles.lastOrNull()
 
+                    Text("Ticker: ${current.symbol}", color = Color.Blue)
                     Text("Candles downloaded: ${candles.size}")
                     Text("Oldest candle date: ${oldestCandle?.date}")
                     Text("Latest candle date: ${latestCandle?.date}")
-                    Text("Latest close: ${latestCandle?.close}")
-                    Text("Latest SMA20: ${analysis.sma20.lastOrNull { it != null }}")
-                    Text("Latest EMA20: ${analysis.ema20.lastOrNull { it != null }}")
-                    Text("Latest RSI14: ${analysis.rsi14.lastOrNull { it != null }}")
+                    Text("Latest close: ${latestCandle?.close.let {"%.2f".format(it)}}")
+                    Text("Latest SMA20: ${analysis.sma20.lastOrNull { it != null }?.let{"%.2f".format(it)}}")
+                    Text("Latest EMA20: ${analysis.ema20.lastOrNull { it != null }?.let{"%.2f".format(it)}}")
+                    Text("Latest RSI14: ${analysis.rsi14.lastOrNull { it != null }.let{"%.2f".format(it)}}")
                 }
             }
         }
