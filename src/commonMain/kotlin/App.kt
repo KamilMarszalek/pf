@@ -1,4 +1,5 @@
 import analysis.analyzeCandles
+import analysis.exportAnalysisToCsv
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import data.ApiResult
 import data.StockProvider
 import data.createHttpClient
+import file.SaveFileResult
+import file.saveTextFile
 import kotlinx.coroutines.launch
 import ui.AppState
 
@@ -23,6 +26,7 @@ fun App() {
     var ticker by remember { mutableStateOf("")}
     val stockProvider = remember { StockProvider(createHttpClient(), AppConfig.API_KEY) }
     val scope = rememberCoroutineScope()
+    var exportMessage by remember { mutableStateOf<String?>(null) }
     // Immutable state (on new state old one is overwritten)
     var state by remember { mutableStateOf<AppState>(AppState.Idle) }
 
@@ -68,6 +72,25 @@ fun App() {
                 ) {
                     Text("Analyze")
                 }
+                Button(
+                    enabled = state is AppState.Success,
+                    onClick = {
+                        val successState = state as? AppState.Success ?: return@Button
+                        val csv = exportAnalysisToCsv(successState.analysis)
+                        val filename = "${successState.symbol}_analysis.csv"
+
+                        exportMessage = when (val result = saveTextFile(filename, csv)) {
+                            is SaveFileResult.Success -> "CSV saved to ${result.path}"
+                            SaveFileResult.Cancelled -> "CSV export canceled"
+                            is SaveFileResult.Failure -> "CSV export failed: ${result.message}"
+                        }
+                    }
+                ) {
+                    Text("Export to csv")
+                }
+            }
+            exportMessage?.let {
+                Text(text = it, color = Color.Blue)
             }
             when (val current = state) {
                 AppState.Idle -> Text("Enter ticker and click Analyze")
