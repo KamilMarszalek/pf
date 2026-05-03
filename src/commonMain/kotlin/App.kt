@@ -3,6 +3,8 @@ import analysis.exportAnalysisToCsv
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.MaterialTheme
@@ -20,6 +22,7 @@ import file.SaveFileResult
 import file.saveTextFile
 import kotlinx.coroutines.launch
 import ui.AppState
+import ui.CandlestickChart
 
 @Composable
 fun App() {
@@ -115,6 +118,14 @@ fun App() {
                     Text("Latest SMA20: ${formatNullable(analysis.sma20.lastOrNull { it != null })}")
                     Text("Latest EMA20: ${formatNullable(analysis.ema20.lastOrNull { it != null })}")
                     Text("Latest RSI14: ${formatNullable(analysis.rsi14.lastOrNull { it != null })}")
+
+                    CandlestickChart(
+                        candles = analysis.candles,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(400.dp)
+                            .padding(top = 8.dp)
+                    )
                 }
             }
         }
