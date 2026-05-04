@@ -36,21 +36,13 @@ fun RsiChart(
         }
 
         val candleWidth = width / visibleRsi.size
-        visibleRsi
-            .mapIndexed { i, v ->
-                if (v != null) Offset(i * candleWidth + candleWidth / 2, rsiToY(v)) else null
+        val offsets = visibleRsi.mapIndexed { i, v ->
+            if (v != null) Offset(i * candleWidth + candleWidth / 2, rsiToY(v)) else null
+        }
+        segmentOffsets(offsets).forEach { segment ->
+            segment.zipWithNext { a, b ->
+                drawLine(color = Color(0xFFAB47BC), start = a, end = b, strokeWidth = 1.5f)
             }
-            .fold(emptyList<List<Offset>>() to emptyList<Offset>()) { (segments, current), point ->
-                if (point != null) segments to (current + point)
-                else (if (current.isNotEmpty()) segments + listOf(current) else segments) to emptyList()
-            }
-            .let { (segments, last) ->
-                if (last.isNotEmpty()) segments + listOf(last) else segments
-            }
-            .forEach { segment ->
-                segment.zipWithNext { a, b ->
-                    drawLine(color = Color(0xFFAB47BC), start = a, end = b, strokeWidth = 1.5f)
-                }
-            }
+        }
     }
 }

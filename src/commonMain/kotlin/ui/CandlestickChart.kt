@@ -60,27 +60,14 @@ fun CandlestickChart(
         }
 
         fun drawIndicatorLine(values: List<Double?>, color: Color) {
-            values
-                .mapIndexed { i, v ->
-                    if (v != null) Offset(i * candleWidth + candleWidth / 2, priceToY(v)) else null
+            val offsets = values.mapIndexed { i, v ->
+                if (v != null) Offset(i * candleWidth + candleWidth / 2, priceToY(v)) else null
+            }
+            segmentOffsets(offsets).forEach { segment ->
+                segment.zipWithNext { a, b ->
+                    drawLine(color = color, start = a, end = b, strokeWidth = 1.5f)
                 }
-                .fold(emptyList<List<Offset>>() to emptyList<Offset>()) { (segments, current), point ->
-                    if (point != null) {
-                        segments to (current + point)
-                    } else {
-                        (if (current.isNotEmpty()) segments + listOf(current) else segments) to emptyList()
-                    }
-                }
-                .let { (segments, last) ->
-                    if (last.isNotEmpty()) segments + listOf(last) else segments
-                }
-                .forEach { segment ->
-                    segment.zipWithNext { a, b ->
-                        drawLine(color = color, start = a, end = b, strokeWidth = 1.5f)
-                    }
-                }
-
-
+            }
         }
         drawIndicatorLine(visibleSma, Color(0xFFFFA726))
         drawIndicatorLine(visibleEma, Color(0xFF42A5F5))
