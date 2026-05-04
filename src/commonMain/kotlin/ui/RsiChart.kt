@@ -1,0 +1,56 @@
+package ui
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+
+@Composable
+fun RsiChart(
+    rsi14: List<Double?>,
+    modifier: Modifier = Modifier
+) {
+    if (rsi14.isEmpty()) return
+
+    val visibleRsi = rsi14.takeLast(100)
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val width = size.width
+        val height = size.height
+
+        fun rsiToY(value: Double): Float = (height * (1.0 - value / 100.0)).toFloat()
+
+        val dash = PathEffect.dashPathEffect(floatArrayOf(8f, 4f))
+
+        listOf(30.0 to Color(0xFF26A69A), 70.0 to Color(0xFFEF5350)).forEach { (level, color) ->
+            drawLine(
+                color = color.copy(alpha = 0.6f),
+                start = Offset(0f, rsiToY(level)),
+                end = Offset(width, rsiToY(level)),
+                strokeWidth = 1f,
+                pathEffect = dash
+            )
+        }
+
+        val candleWidth = width / visibleRsi.size
+        visibleRsi
+            .mapIndexed { i, v ->
+                if (v != null) Offset(i * candleWidth + candleWidth / 2, rsiToY(v)) else null
+            }
+            .fold(emptyList<List<Offset>>() to emptyList<Offset>()) { (segments, current), point ->
+                if (point != null) segments to (current + point)
+                else (if (current.isNotEmpty()) segments + listOf(current) else segments) to emptyList()
+            }
+            .let { (segments, last) ->
+                if (last.isNotEmpty()) segments + listOf(last) else segments
+            }
+            .forEach { segment ->
+                segment.zipWithNext { a, b ->
+                    drawLine(color = Color(0xFFAB47BC), start = a, end = b, strokeWidth = 1.5f)
+                }
+            }
+    }
+}

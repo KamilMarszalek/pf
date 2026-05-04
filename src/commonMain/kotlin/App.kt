@@ -26,6 +26,7 @@ import file.saveTextFile
 import kotlinx.coroutines.launch
 import ui.AppState
 import ui.CandlestickChart
+import ui.RsiChart
 
 @Composable
 fun App() {
@@ -135,6 +136,17 @@ fun App() {
                         Spacer(Modifier.width(16.dp))
                         Box(modifier = Modifier.size(12.dp).background(Color(0xFF42A5F5)))
                         Text(" EMA20", style = MaterialTheme.typography.caption)
+                    }
+
+                    Text("RSI(14)", style = MaterialTheme.typography.caption, modifier = Modifier.padding(top = 8.dp))
+                    RsiChart(
+                        rsi14 = analysis.rsi14,
+                        modifier = Modifier.fillMaxWidth().height(300.dp)
+                    )
+                    Row {
+                        Text("— 70 (overbought)", style = MaterialTheme.typography.caption, color = Color(0xFFEF5350))
+                        Spacer(Modifier.width(16.dp))
+                        Text("— 30 (oversold)", style = MaterialTheme.typography.caption, color = Color(0xFF26A69A))
                     }
                 }
             }
