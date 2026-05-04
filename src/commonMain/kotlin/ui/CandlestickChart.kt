@@ -10,10 +10,20 @@ import androidx.compose.ui.graphics.Color
 import data.Candle
 
 @Composable
-fun CandlestickChart(candles: List<Candle>, modifier: Modifier = Modifier) {
+fun CandlestickChart(
+    candles: List<Candle>,
+    sma20: List<Double?> = emptyList(),
+    ema20: List<Double?> = emptyList(),
+    modifier: Modifier = Modifier
+) {
     if (candles.isEmpty()) return
 
+    val totalCount = candles.size
     val visibleCandles = candles.takeLast(100)
+    val offset = totalCount - visibleCandles.size
+
+    val visibleSma = sma20.drop(offset).take(visibleCandles.size)
+    val visibleEma = ema20.drop(offset).take(visibleCandles.size)
     Canvas(modifier = modifier.fillMaxSize()) {
         val width = size.width
         val height = size.height
@@ -48,5 +58,31 @@ fun CandlestickChart(candles: List<Candle>, modifier: Modifier = Modifier) {
                 size = Size(bodyWidth, bodyHeight)
             )
         }
+
+        fun drawIndicatorLine(values: List<Double?>, color: Color) {
+            values
+                .mapIndexed { i, v ->
+                    if (v != null) Offset(i * candleWidth + candleWidth / 2, priceToY(v)) else null
+                }
+                .fold(emptyList<List<Offset>>() to emptyList<Offset>()) { (segments, current), point ->
+                    if (point != null) {
+                        segments to (current + point)
+                    } else {
+                        (if (current.isNotEmpty()) segments + listOf(current) else segments) to emptyList()
+                    }
+                }
+                .let { (segments, last) ->
+                    if (last.isNotEmpty()) segments + listOf(last) else segments
+                }
+                .forEach { segment ->
+                    segment.zipWithNext { a, b ->
+                        drawLine(color = color, start = a, end = b, strokeWidth = 1.5f)
+                    }
+                }
+
+
+        }
+        drawIndicatorLine(visibleSma, Color(0xFFFFA726))
+        drawIndicatorLine(visibleEma, Color(0xFF42A5F5))
     }
 }

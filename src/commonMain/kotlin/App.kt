@@ -1,11 +1,14 @@
 import analysis.analyzeCandles
 import analysis.exportAnalysisToCsv
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
@@ -121,11 +124,18 @@ fun App() {
 
                     CandlestickChart(
                         candles = analysis.candles,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp)
-                            .padding(top = 8.dp)
+                        sma20 = analysis.sma20,
+                        ema20 = analysis.ema20,
+                        modifier = Modifier.fillMaxWidth().height(400.dp).padding(top = 8.dp)
                     )
+
+                    Row(modifier = Modifier.padding(top = 4.dp)) {
+                        Box(modifier = Modifier.size(12.dp).background(Color(0xFFFFA726)))
+                        Text(" SMA20", style = MaterialTheme.typography.caption)
+                        Spacer(Modifier.width(16.dp))
+                        Box(modifier = Modifier.size(12.dp).background(Color(0xFF42A5F5)))
+                        Text(" EMA20", style = MaterialTheme.typography.caption)
+                    }
                 }
             }
         }
