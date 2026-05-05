@@ -2,14 +2,17 @@ package ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.sp
 import data.Candle
 
 @Composable
@@ -21,11 +24,13 @@ fun CandlestickChart(
 ) {
     if (candles.isEmpty()) return
 
+    val textMeasurer = rememberTextMeasurer()
+
     val totalCount = candles.size
-    val visibleCandles = candles.takeLast(100)
+    val visibleCandles = candles.takeLast(101)
     val offset = totalCount - visibleCandles.size
 
-    val paddingPx = 10f
+    val paddingPx = 30f
 
     val visibleSma = sma20.drop(offset).take(visibleCandles.size)
     val visibleEma = ema20.drop(offset).take(visibleCandles.size)
@@ -48,8 +53,8 @@ fun CandlestickChart(
         val getY = { price: Double -> (paddingPx + availableChartHeight * (1.0 - (price - priceMin)/priceRange)).toFloat() }
 
         //grid and labels
-        drawYAxisLabels(priceMin, priceMax, getY, paddingPx,  width - paddingPx)
-        drawXAxisLabels(visibleCandles, getX, paddingPx, height - paddingPx)
+        drawYAxisLabels(priceMin, priceMax, getY, paddingPx, width, textMeasurer)
+        drawXAxisLabels(visibleCandles, getX, paddingPx, height, textMeasurer)
 
         //candles
         val candleWidth = availableChartWidth / visibleCandles.size
@@ -70,44 +75,69 @@ private fun DrawScope.drawYAxisLabels(
     min: Double,
     max: Double,
     getY: (Double) -> Float,
-    startX: Float,
-    endX: Float
+    padding: Float,
+    width: Float,
+    textMeasurer: TextMeasurer
 ) {
     val steps  = 5
     val stepValue = (max - min) / steps
+    val textStyle = TextStyle(color = Color.Gray, fontSize = 10.sp)
 
     (0..steps).forEach { i ->
         val price = min + (stepValue * i)
         val y = getY(price)
+        val priceText = String.format("%.1f", price)
 
         drawLine(
             color = Color.LightGray.copy(alpha = 0.3f),
-            start = Offset(startX, y),
-            end = Offset(endX, y),
+            start = Offset(padding, y),
+            end = Offset(width - padding, y),
             strokeWidth = 1f
         )
+
+        val textLayoutResult = textMeasurer.measure(priceText, textStyle)
+
+        drawText(
+            textLayoutResult = textLayoutResult,
+            topLeft = Offset(
+                x = width - textLayoutResult.size.width - 5f,
+                y = y - (textLayoutResult.size.height / 2)
+            )
+        )
     }
-    // TODO add prices here
 }
 
 private fun DrawScope.drawXAxisLabels(
     candles: List<Candle>,
     getX: (Int) -> Float,
-    startY: Float,
-    endY: Float
+    padding: Float,
+    height: Float,
+    textMeasurer: TextMeasurer
 ) {
-    candles.forEachIndexed { i, _ ->
+    val textStyle = TextStyle(color = Color.Gray, fontSize = 10.sp)
+
+    candles.forEachIndexed { i, candle ->
         if (i % 20 == 0) {
             val x = getX(i)
             drawLine(
                 color = Color.LightGray.copy(alpha = 0.3f),
-                start = Offset(x, startY),
-                end = Offset(x, endY),
+                start = Offset(x, padding),
+                end = Offset(x, height - padding),
                 strokeWidth = 1f
+            )
+
+            val textLayoutResult = textMeasurer.measure(candle.date, textStyle)
+
+            drawText(
+                textLayoutResult = textLayoutResult,
+                topLeft = Offset(
+                    x = x - (textLayoutResult.size.width / 2),
+                    y = height - textLayoutResult.size.height - 5f
+                )
             )
         }
     }
-    // TODO add dates here
+
 }
 
 private fun DrawScope.drawCandle(
