@@ -114,14 +114,21 @@ fun App() {
                     val oldestCandle = candles.firstOrNull()
                     val latestCandle = candles.lastOrNull()
 
-                    Text("Ticker: ${current.symbol}", color = Color.Blue)
-                    Text("Candles downloaded: ${candles.size}")
-                    Text("Oldest candle date: ${oldestCandle?.date}")
-                    Text("Latest candle date: ${latestCandle?.date}")
-                    Text("Latest close: ${formatNullable(latestCandle?.close)}$")
-                    Text("Latest SMA20: ${formatNullable(analysis.sma20.lastOrNull { it != null })}$")
-                    Text("Latest EMA20: ${formatNullable(analysis.ema20.lastOrNull { it != null })}$")
-                    Text("Latest RSI14: ${formatNullable(analysis.rsi14.lastOrNull { it != null })}$")
+                    Row{
+                        Column {
+                            Text("Ticker: ${current.symbol}", color = Color.Blue)
+                            Text("Candles downloaded: ${candles.size}")
+                            Text("Oldest candle date: ${oldestCandle?.date}")
+                            Text("Latest candle date: ${latestCandle?.date}")
+                        }
+                        Spacer(modifier = Modifier.padding(5.dp))
+                        Column {
+                            Text("Latest close: ${formatNullable(latestCandle?.close)}$")
+                            Text("Latest SMA20: ${formatNullable(analysis.sma20.lastOrNull { it != null })}$")
+                            Text("Latest EMA20: ${formatNullable(analysis.ema20.lastOrNull { it != null })}$")
+                            Text("Latest RSI14: ${formatNullable(analysis.rsi14.lastOrNull { it != null })}$")
+                        }
+                    }
 
                     CandlestickChart(
                         candles = analysis.candles,
