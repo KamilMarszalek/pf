@@ -118,10 +118,10 @@ fun App() {
                     Text("Candles downloaded: ${candles.size}")
                     Text("Oldest candle date: ${oldestCandle?.date}")
                     Text("Latest candle date: ${latestCandle?.date}")
-                    Text("Latest close: ${formatNullable(latestCandle?.close)}")
-                    Text("Latest SMA20: ${formatNullable(analysis.sma20.lastOrNull { it != null })}")
-                    Text("Latest EMA20: ${formatNullable(analysis.ema20.lastOrNull { it != null })}")
-                    Text("Latest RSI14: ${formatNullable(analysis.rsi14.lastOrNull { it != null })}")
+                    Text("Latest close: ${formatNullable(latestCandle?.close)}$")
+                    Text("Latest SMA20: ${formatNullable(analysis.sma20.lastOrNull { it != null })}$")
+                    Text("Latest EMA20: ${formatNullable(analysis.ema20.lastOrNull { it != null })}$")
+                    Text("Latest RSI14: ${formatNullable(analysis.rsi14.lastOrNull { it != null })}$")
 
                     CandlestickChart(
                         candles = analysis.candles,
