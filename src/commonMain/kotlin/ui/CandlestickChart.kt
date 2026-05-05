@@ -2,12 +2,14 @@ package ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.unit.dp
 import data.Candle
 
 @Composable
@@ -23,25 +25,34 @@ fun CandlestickChart(
     val visibleCandles = candles.takeLast(100)
     val offset = totalCount - visibleCandles.size
 
+    val paddingPx = 10f
+
     val visibleSma = sma20.drop(offset).take(visibleCandles.size)
     val visibleEma = ema20.drop(offset).take(visibleCandles.size)
-    Canvas(modifier = modifier.fillMaxSize()) {
+    Canvas(
+        modifier = modifier
+            .fillMaxSize()
+    ) {
         val width = size.width
+        val height = size.height
+
+        val availableChartWidth = width - (2 * paddingPx)
+        val availableChartHeight = height - (2 * paddingPx)
 
         val priceMin = visibleCandles.minOf { it.low }
         val priceMax = visibleCandles.maxOf { it.high }
         val priceRange = priceMax - priceMin
 
         // pure transmutation functions
-        val getX = { index: Int -> index * (size.width / visibleCandles.size) + (size.width / visibleCandles.size / 2)}
-        val getY = { price: Double -> (size.height * (1.0 - (price - priceMin)/priceRange)).toFloat() }
+        val getX = { index: Int -> paddingPx + index * (availableChartWidth / visibleCandles.size) + (availableChartWidth / visibleCandles.size / 2)}
+        val getY = { price: Double -> (paddingPx + availableChartHeight * (1.0 - (price - priceMin)/priceRange)).toFloat() }
 
         //grid and labels
-        drawYAxisLabels(priceMin, priceMax, getY, size.width)
-        drawXAxisLabels(candles, getX, size.height)
+        drawYAxisLabels(priceMin, priceMax, getY, paddingPx,  width - paddingPx)
+        drawXAxisLabels(visibleCandles, getX, paddingPx, height - paddingPx)
 
         //candles
-        val candleWidth = width / visibleCandles.size
+        val candleWidth = availableChartWidth / visibleCandles.size
         val bodyWidth = candleWidth * 0.6f
         visibleCandles.forEachIndexed { i, candle ->
             drawCandle(candle, getX(i), bodyWidth, getY)
@@ -59,7 +70,8 @@ private fun DrawScope.drawYAxisLabels(
     min: Double,
     max: Double,
     getY: (Double) -> Float,
-    width: Float
+    startX: Float,
+    endX: Float
 ) {
     val steps  = 5
     val stepValue = (max - min) / steps
@@ -70,8 +82,8 @@ private fun DrawScope.drawYAxisLabels(
 
         drawLine(
             color = Color.LightGray.copy(alpha = 0.3f),
-            start = Offset(0f, y),
-            end = Offset(width, y),
+            start = Offset(startX, y),
+            end = Offset(endX, y),
             strokeWidth = 1f
         )
     }
@@ -81,15 +93,16 @@ private fun DrawScope.drawYAxisLabels(
 private fun DrawScope.drawXAxisLabels(
     candles: List<Candle>,
     getX: (Int) -> Float,
-    height: Float
+    startY: Float,
+    endY: Float
 ) {
     candles.forEachIndexed { i, _ ->
         if (i % 20 == 0) {
             val x = getX(i)
             drawLine(
                 color = Color.LightGray.copy(alpha = 0.3f),
-                start = Offset(x, 0f),
-                end = Offset(x, height),
+                start = Offset(x, startY),
+                end = Offset(x, endY),
                 strokeWidth = 1f
             )
         }
