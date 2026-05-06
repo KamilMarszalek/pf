@@ -3,6 +3,9 @@ package ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -14,6 +17,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import data.Candle
+import data.ChartState
 
 @Composable
 fun CandlestickChart(
@@ -26,46 +30,60 @@ fun CandlestickChart(
     if (candles.isEmpty()) return
 
     val textMeasurer = rememberTextMeasurer()
-
-    val visibleCandles = candles.slice(visibleRange)
-    val offset = visibleRange.first
-
     val paddingPx = 30f
 
-    val visibleSma = sma20.drop(offset).take(visibleCandles.size)
-    val visibleEma = ema20.drop(offset).take(visibleCandles.size)
+    val chartState by remember(candles, sma20, ema20, visibleRange) {
+        derivedStateOf {
+            val visibleCandles = candles.slice(visibleRange)
+            if (visibleCandles.isEmpty()) return@derivedStateOf null
+
+            val priceMin = visibleCandles.minOf { it.low }
+            val priceMax = visibleCandles.maxOf { it.high }
+            val priceRange = (priceMax - priceMin).takeIf { it > 0.0 } ?: 1.0
+
+            val offset = visibleRange.first
+            val visibleSma = sma20.drop(offset).take(visibleCandles.size)
+            val visibleEma = ema20.drop(offset).take(visibleCandles.size)
+
+            ChartState(visibleCandles = visibleCandles,
+                visibleSma = visibleSma,
+                visibleEma = visibleEma,
+                priceMin = priceMin,
+                priceMax = priceMax,
+                priceRange = priceRange
+            )
+        }
+    }
     Canvas(
         modifier = modifier
             .fillMaxSize()
     ) {
+        val state = chartState ?: return@Canvas
+
         val width = size.width
         val height = size.height
 
         val availableChartWidth = width - (2 * paddingPx)
         val availableChartHeight = height - (2 * paddingPx)
 
-        val priceMin = visibleCandles.minOf { it.low }
-        val priceMax = visibleCandles.maxOf { it.high }
-        val priceRange = (priceMax - priceMin).takeIf { it > 0.0 } ?: 1.0
-
         // pure transmutation functions
-        val getX = { index: Int -> paddingPx + index * (availableChartWidth / visibleCandles.size) + (availableChartWidth / visibleCandles.size / 2)}
-        val getY = { price: Double -> (paddingPx + availableChartHeight * (1.0 - (price - priceMin)/priceRange)).toFloat() }
+        val getX = { index: Int -> paddingPx + index * (availableChartWidth / state.visibleCandles.size) + (availableChartWidth / state.visibleCandles.size / 2)}
+        val getY = { price: Double -> (paddingPx + availableChartHeight * (1.0 - (price - state.priceMin)/state.priceRange)).toFloat() }
 
         //grid and labels
-        drawYAxisLabels(priceMin, priceMax, getY, paddingPx, width, textMeasurer)
-        drawXAxisLabels(visibleCandles, getX, paddingPx, height, textMeasurer)
+        drawYAxisLabels(state.priceMin, state.priceMax, getY, paddingPx, width, textMeasurer)
+        drawXAxisLabels(state.visibleCandles, getX, paddingPx, height, textMeasurer)
 
         //candles
-        val candleWidth = availableChartWidth / visibleCandles.size
+        val candleWidth = availableChartWidth / state.visibleCandles.size
         val bodyWidth = candleWidth * 0.6f
-        visibleCandles.forEachIndexed { i, candle ->
+        state.visibleCandles.forEachIndexed { i, candle ->
             drawCandle(candle, getX(i), bodyWidth, getY)
         }
 
         //indicators
-        drawIndicatorLine(visibleSma, Color(0xFFFFA726), getX, getY)
-        drawIndicatorLine(visibleEma, Color(0xFF42A5F5), getX, getY)
+        drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
+        drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
     }
 }
 
@@ -116,7 +134,8 @@ private fun DrawScope.drawXAxisLabels(
 ) {
     val textStyle = TextStyle(color = Color.Gray, fontSize = 10.sp)
 
-    val interval = (candles.size - 1) / 5
+    val labelCount = 5
+    val interval = (candles.size / labelCount).coerceAtLeast(1)
 
     candles.forEachIndexed { i, candle ->
         if (i % interval == 0) {
