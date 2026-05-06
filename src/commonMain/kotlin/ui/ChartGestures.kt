@@ -1,14 +1,18 @@
 package ui
 
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import data.ChartState
+import data.TrendLine
 
 @Composable
 fun Modifier.chartDrag(
+    isDrawingMode: Boolean,
     chartWidthPx: Float,
     visibleRange: IntRange,
     totalCount: Int,
@@ -18,6 +22,8 @@ fun Modifier.chartDrag(
     val onRangeChangeState = rememberUpdatedState(onRangeChange)
 
     return pointerInput(chartWidthPx, totalCount) {
+        if (isDrawingMode) return@pointerInput
+
         var dragAccumulator = 0f
 
         detectDragGestures(
@@ -100,6 +106,51 @@ fun Modifier.chartZoom(
                 )
 
                 event.changes.forEach { it.consume() }
+            }
+        }
+    }
+}
+
+@Composable
+fun Modifier.drawTrendLine(
+    isDrawingMode: Boolean,
+    chartState: ChartState?,
+    visibleRange: IntRange,
+    paddingPx: Float,
+    onLineAdded: (TrendLine) -> Unit
+) : Modifier = composed {
+    var firstPoint by remember { mutableStateOf<Pair<Int, Double>?>(null) }
+
+    LaunchedEffect(isDrawingMode) {
+        if (!isDrawingMode) firstPoint = null
+    }
+
+    pointerInput(isDrawingMode, chartState, visibleRange) {
+        if (!isDrawingMode || chartState == null) return@pointerInput
+
+        detectTapGestures { offset ->
+            val availableW = size.width - (2 * paddingPx)
+            val availableH = size.height - (2 * paddingPx)
+
+            val step = availableW / chartState.visibleCandles.size
+            val localIndex = ((offset.x - paddingPx - step / 2) / step).toInt().coerceIn(0, chartState.visibleCandles.size - 1)
+            val globalIndex = visibleRange.first + localIndex
+
+            val relativeY = (offset.y - paddingPx) / availableH
+            val clickedPrice = chartState.priceMin + (1.0 - relativeY.toDouble()) * chartState.priceRange
+
+            if (firstPoint == null) {
+                firstPoint = globalIndex to clickedPrice
+            } else {
+                onLineAdded(
+                    TrendLine(
+                        startIndex = firstPoint!!.first,
+                        startPrice = firstPoint!!.second,
+                        endIndex = globalIndex,
+                        endPrice = clickedPrice
+                    )
+                )
+                firstPoint = null
             }
         }
     }

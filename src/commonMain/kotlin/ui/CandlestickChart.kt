@@ -2,10 +2,7 @@ package ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -18,6 +15,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import data.Candle
 import data.ChartState
+import data.TrendLine
 
 @Composable
 fun CandlestickChart(
@@ -25,6 +23,9 @@ fun CandlestickChart(
     sma20: List<Double?> = emptyList(),
     ema20: List<Double?> = emptyList(),
     visibleRange: IntRange,
+    isDrawingMode: Boolean,
+    trendLines: List<TrendLine>,
+    onLineAdded: (TrendLine) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (candles.isEmpty()) return
@@ -57,6 +58,13 @@ fun CandlestickChart(
     Canvas(
         modifier = modifier
             .fillMaxSize()
+            .drawTrendLine(
+                isDrawingMode = isDrawingMode,
+                chartState = chartState,
+                visibleRange = visibleRange,
+                paddingPx = paddingPx,
+                onLineAdded = onLineAdded
+            )
     ) {
         val state = chartState ?: return@Canvas
 
@@ -84,10 +92,34 @@ fun CandlestickChart(
         //indicators
         drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
         drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
+
+        //user lines
+        drawUserLines(trendLines, getX, getY, visibleRange)
     }
 }
 
 // helpers (DrawScope extensions)
+
+fun DrawScope.drawUserLines(
+    trendLines: List<TrendLine>,
+    getX: (Int) -> Float,
+    getY: (Double) -> Float,
+    visibleRange: IntRange
+) {
+    trendLines.forEach { line ->
+        val xStart = getX(line.startIndex - visibleRange.first)
+        val xEnd = getX(line.endIndex - visibleRange.first)
+        val yStart = getY(line.startPrice)
+        val yEnd = getY(line.endPrice)
+
+        drawLine(
+            color = Color.Magenta,
+            start = Offset(xStart, yStart),
+            end = Offset(xEnd, yEnd),
+            strokeWidth = 3f
+        )
+    }
+}
 
 private fun DrawScope.drawYAxisLabels(
     min: Double,

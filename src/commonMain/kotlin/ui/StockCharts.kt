@@ -10,16 +10,13 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
+import data.TrendLine
 
 @Composable
 fun StockCharts(
@@ -35,6 +32,9 @@ fun StockCharts(
 
     var chartWidthPx by remember { mutableStateOf(0f) }
 
+    var isDrawingMode by remember { mutableStateOf(false)}
+    val trendLines = remember { mutableStateListOf<TrendLine>() }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -46,6 +46,7 @@ fun StockCharts(
                     visibleRange = visibleRange,
                     totalCount = totalCount,
                     onRangeChange = { visibleRange = it },
+                    isDrawingMode = isDrawingMode
                 )
                 .chartZoom(
                     visibleRange = visibleRange,
@@ -56,20 +57,19 @@ fun StockCharts(
             Row(
                 modifier = Modifier
                     .align(Alignment.End)
-                    .padding(3.dp)
             ) {
                 IconButton(
-                    onClick = { /* draw line */ }
+                    onClick = { isDrawingMode = !isDrawingMode }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Edit",
-                        tint = Color.Black
+                        tint = if (isDrawingMode) Color.Magenta else Color.Black
                     )
                 }
                 Spacer(Modifier.width(10.dp))
                 IconButton(
-                    onClick = { /* clear */ }
+                    onClick = { trendLines.clear() }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
@@ -83,6 +83,12 @@ fun StockCharts(
                 sma20 = analysis.sma20,
                 ema20 = analysis.ema20,
                 visibleRange = visibleRange,
+                isDrawingMode = isDrawingMode,
+                trendLines = trendLines,
+                onLineAdded = { newLine ->
+                    trendLines.add(newLine)
+                    isDrawingMode = false // Automatyczne wyłączenie po narysowaniu
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(400.dp)
