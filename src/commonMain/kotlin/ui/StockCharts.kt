@@ -2,22 +2,20 @@ package ui
 
 import analysis.StockAnalysis
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
@@ -37,70 +35,99 @@ fun StockCharts(
 
     var chartWidthPx by remember { mutableStateOf(0f) }
 
-    Column(
-        modifier = modifier
-            .onSizeChanged { chartWidthPx = it.width.toFloat() }
-            .chartDrag(
-                chartWidthPx = chartWidthPx,
-                visibleRange = visibleRange,
-                totalCount = totalCount,
-                onRangeChange = { visibleRange = it },
-            )
-            .chartZoom(
-                visibleRange = visibleRange,
-                totalCount = totalCount,
-                onRangeChange = { visibleRange = it },
-            ),
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        CandlestickChart(
-            candles = analysis.candles,
-            sma20 = analysis.sma20,
-            ema20 = analysis.ema20,
-            visibleRange = visibleRange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-                .padding(top = 8.dp),
-        )
-
-        Row(modifier = Modifier.padding(top = 4.dp)) {
-            Box(modifier = Modifier.size(12.dp).background(Color(0xFFFFA726)))
-            Text(" SMA20", style = MaterialTheme.typography.caption)
-
-            Spacer(Modifier.width(16.dp))
-
-            Box(modifier = Modifier.size(12.dp).background(Color(0xFF42A5F5)))
-            Text(" EMA20", style = MaterialTheme.typography.caption)
-        }
-
-        Text(
-            "RSI(14)",
-            style = MaterialTheme.typography.caption,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-
-        RsiChart(
-            rsi14 = analysis.rsi14,
-            visibleRange = visibleRange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp),
-        )
-
-        Row {
-            Text(
-                "— 70 (overbought)",
-                style = MaterialTheme.typography.caption,
-                color = Color(0xFFEF5350),
+        Column(
+            modifier = modifier
+                .onSizeChanged { chartWidthPx = it.width.toFloat() }
+                .chartDrag(
+                    chartWidthPx = chartWidthPx,
+                    visibleRange = visibleRange,
+                    totalCount = totalCount,
+                    onRangeChange = { visibleRange = it },
+                )
+                .chartZoom(
+                    visibleRange = visibleRange,
+                    totalCount = totalCount,
+                    onRangeChange = { visibleRange = it },
+                ),
+        ) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(3.dp)
+            ) {
+                IconButton(
+                    onClick = { /* draw line */ }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = Color.Black
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                IconButton(
+                    onClick = { /* clear */ }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Clear",
+                        tint = Color.Black
+                    )
+                }
+            }
+            CandlestickChart(
+                candles = analysis.candles,
+                sma20 = analysis.sma20,
+                ema20 = analysis.ema20,
+                visibleRange = visibleRange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+                    .padding(top = 8.dp),
             )
 
-            Spacer(Modifier.width(16.dp))
+            Row(modifier = Modifier.padding(top = 4.dp)) {
+                Box(modifier = Modifier.size(12.dp).background(Color(0xFFFFA726)))
+                Text(" SMA20", style = MaterialTheme.typography.caption)
+
+                Spacer(Modifier.width(16.dp))
+
+                Box(modifier = Modifier.size(12.dp).background(Color(0xFF42A5F5)))
+                Text(" EMA20", style = MaterialTheme.typography.caption)
+            }
 
             Text(
-                "— 30 (oversold)",
+                "RSI(14)",
                 style = MaterialTheme.typography.caption,
-                color = Color(0xFF26A69A),
+                modifier = Modifier.padding(top = 8.dp),
             )
+
+            RsiChart(
+                rsi14 = analysis.rsi14,
+                visibleRange = visibleRange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+            )
+
+            Row {
+                Text(
+                    "— 70 (overbought)",
+                    style = MaterialTheme.typography.caption,
+                    color = Color(0xFFEF5350),
+                )
+
+                Spacer(Modifier.width(16.dp))
+
+                Text(
+                    "— 30 (oversold)",
+                    style = MaterialTheme.typography.caption,
+                    color = Color(0xFF26A69A),
+                )
+            }
         }
     }
 }
