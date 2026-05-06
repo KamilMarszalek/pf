@@ -20,15 +20,15 @@ fun CandlestickChart(
     candles: List<Candle>,
     sma20: List<Double?> = emptyList(),
     ema20: List<Double?> = emptyList(),
-    modifier: Modifier = Modifier
+    visibleRange: IntRange,
+    modifier: Modifier = Modifier,
 ) {
     if (candles.isEmpty()) return
 
     val textMeasurer = rememberTextMeasurer()
 
-    val totalCount = candles.size
-    val visibleCandles = candles.takeLast(101)
-    val offset = totalCount - visibleCandles.size
+    val visibleCandles = candles.slice(visibleRange)
+    val offset = visibleRange.first
 
     val paddingPx = 30f
 
@@ -46,7 +46,7 @@ fun CandlestickChart(
 
         val priceMin = visibleCandles.minOf { it.low }
         val priceMax = visibleCandles.maxOf { it.high }
-        val priceRange = priceMax - priceMin
+        val priceRange = (priceMax - priceMin).takeIf { it > 0.0 } ?: 1.0
 
         // pure transmutation functions
         val getX = { index: Int -> paddingPx + index * (availableChartWidth / visibleCandles.size) + (availableChartWidth / visibleCandles.size / 2)}

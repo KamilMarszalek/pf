@@ -1,14 +1,10 @@
 import analysis.analyzeCandles
 import analysis.exportAnalysisToCsv
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
@@ -25,8 +21,7 @@ import file.SaveFileResult
 import file.saveTextFile
 import kotlinx.coroutines.launch
 import ui.AppState
-import ui.CandlestickChart
-import ui.RsiChart
+import ui.StockCharts
 
 @Composable
 fun App() {
@@ -49,8 +44,6 @@ fun App() {
 //    LaunchedEffect(Unit) {
 //        loadAnalysis(ticker)
 //    }
-
-    fun formatNullable(value: Double?): String = value?.let {"%.2f".format(it)} ?: "-"
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             Row {
@@ -109,52 +102,10 @@ fun App() {
 
                 is AppState.Success -> {
                     val analysis = current.analysis
-                    val candles = analysis.candles
-
-                    val oldestCandle = candles.firstOrNull()
-                    val latestCandle = candles.lastOrNull()
-
-                    Row{
-                        Column {
-                            Text("Ticker: ${current.symbol}", color = Color.Blue)
-                            Text("Candles downloaded: ${candles.size}")
-                            Text("Oldest candle date: ${oldestCandle?.date}")
-                            Text("Latest candle date: ${latestCandle?.date}")
-                        }
-                        Spacer(modifier = Modifier.padding(5.dp))
-                        Column {
-                            Text("Latest close: ${formatNullable(latestCandle?.close)}$")
-                            Text("Latest SMA20: ${formatNullable(analysis.sma20.lastOrNull { it != null })}$")
-                            Text("Latest EMA20: ${formatNullable(analysis.ema20.lastOrNull { it != null })}$")
-                            Text("Latest RSI14: ${formatNullable(analysis.rsi14.lastOrNull { it != null })}$")
-                        }
-                    }
-
-                    CandlestickChart(
-                        candles = analysis.candles,
-                        sma20 = analysis.sma20,
-                        ema20 = analysis.ema20,
-                        modifier = Modifier.fillMaxWidth().height(400.dp).padding(top = 8.dp)
+                    StockCharts(
+                        analysis = analysis,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-
-                    Row(modifier = Modifier.padding(top = 4.dp)) {
-                        Box(modifier = Modifier.size(12.dp).background(Color(0xFFFFA726)))
-                        Text(" SMA20", style = MaterialTheme.typography.caption)
-                        Spacer(Modifier.width(16.dp))
-                        Box(modifier = Modifier.size(12.dp).background(Color(0xFF42A5F5)))
-                        Text(" EMA20", style = MaterialTheme.typography.caption)
-                    }
-
-                    Text("RSI(14)", style = MaterialTheme.typography.caption, modifier = Modifier.padding(top = 8.dp))
-                    RsiChart(
-                        rsi14 = analysis.rsi14,
-                        modifier = Modifier.fillMaxWidth().height(300.dp)
-                    )
-                    Row {
-                        Text("— 70 (overbought)", style = MaterialTheme.typography.caption, color = Color(0xFFEF5350))
-                        Spacer(Modifier.width(16.dp))
-                        Text("— 30 (oversold)", style = MaterialTheme.typography.caption, color = Color(0xFF26A69A))
-                    }
                 }
             }
         }

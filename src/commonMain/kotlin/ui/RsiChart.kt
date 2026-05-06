@@ -11,11 +11,12 @@ import androidx.compose.ui.graphics.PathEffect
 @Composable
 fun RsiChart(
     rsi14: List<Double?>,
-    modifier: Modifier = Modifier
+    visibleRange: IntRange,
+    modifier: Modifier = Modifier,
 ) {
     if (rsi14.isEmpty()) return
 
-    val visibleRsi = rsi14.takeLast(100)
+    val visibleRsi = rsi14.drop(visibleRange.first).take(visibleRange.count())
 
     Canvas(modifier = modifier.fillMaxSize()) {
         val width = size.width
