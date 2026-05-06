@@ -116,8 +116,10 @@ private fun DrawScope.drawXAxisLabels(
 ) {
     val textStyle = TextStyle(color = Color.Gray, fontSize = 10.sp)
 
+    val interval = (candles.size - 1) / 5
+
     candles.forEachIndexed { i, candle ->
-        if (i % 20 == 0) {
+        if (i % interval == 0) {
             val x = getX(i)
             drawLine(
                 color = Color.LightGray.copy(alpha = 0.3f),
