@@ -1,11 +1,13 @@
 package ui
 
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import data.ChartState
 import data.TrendLine
@@ -111,46 +113,88 @@ fun Modifier.chartZoom(
     }
 }
 
-@Composable
 fun Modifier.drawTrendLine(
     isDrawingMode: Boolean,
     chartState: ChartState?,
     visibleRange: IntRange,
     paddingPx: Float,
+    firstPoint: Pair<Int, Double>?,
+    onFirstPointChanged: (Pair<Int, Double>?) -> Unit,
+    onCurrentTouchPosChanged: (Offset?) -> Unit,
     onLineAdded: (TrendLine) -> Unit
-) : Modifier = composed {
-    var firstPoint by remember { mutableStateOf<Pair<Int, Double>?>(null) }
+): Modifier = composed {
+    val currentFirstPoint by rememberUpdatedState(firstPoint)
+    val currentRange by rememberUpdatedState(visibleRange)
+    val currentChartState by rememberUpdatedState(chartState)
 
-    LaunchedEffect(isDrawingMode) {
-        if (!isDrawingMode) firstPoint = null
-    }
+    pointerInput(isDrawingMode, chartState) {
+        if (!isDrawingMode || chartState == null) {
+            onCurrentTouchPosChanged(null)
+            return@pointerInput
+        }
 
-    pointerInput(isDrawingMode, chartState, visibleRange) {
-        if (!isDrawingMode || chartState == null) return@pointerInput
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.first()
+                val position = change.position
 
-        detectTapGestures { offset ->
-            val availableW = size.width - (2 * paddingPx)
-            val availableH = size.height - (2 * paddingPx)
+                when {
+                    change.changedToDown() -> {
+                        val state = currentChartState ?: return@awaitPointerEventScope
+                        val availableW = size.width - (2 * paddingPx)
+                        val availableH = size.height - (2 * paddingPx)
+                        val step = availableW / state.visibleCandles.size
 
-            val step = availableW / chartState.visibleCandles.size
-            val localIndex = ((offset.x - paddingPx - step / 2) / step).toInt().coerceIn(0, chartState.visibleCandles.size - 1)
-            val globalIndex = visibleRange.first + localIndex
+                        val localIndex = ((position.x - paddingPx) / step)
+                            .toInt().coerceIn(0, state.visibleCandles.size - 1)
+                        val globalIndex = currentRange.first + localIndex
 
-            val relativeY = (offset.y - paddingPx) / availableH
-            val clickedPrice = chartState.priceMin + (1.0 - relativeY.toDouble()) * chartState.priceRange
+                        val relativeY = (position.y - paddingPx) / availableH
+                        val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
 
-            if (firstPoint == null) {
-                firstPoint = globalIndex to clickedPrice
-            } else {
-                onLineAdded(
-                    TrendLine(
-                        startIndex = firstPoint!!.first,
-                        startPrice = firstPoint!!.second,
-                        endIndex = globalIndex,
-                        endPrice = clickedPrice
-                    )
-                )
-                firstPoint = null
+                        onFirstPointChanged(globalIndex to price)
+                        onCurrentTouchPosChanged(position)
+                        change.consume()
+                    }
+
+                    change.pressed -> {
+                        if (currentFirstPoint != null) {
+                            onCurrentTouchPosChanged(position)
+                            change.consume()
+                        }
+                    }
+
+                    change.changedToUp() -> {
+                        val state = currentChartState
+                        val startPt = currentFirstPoint
+
+                        if (state != null && startPt != null) {
+                            val availableW = size.width - (2 * paddingPx)
+                            val availableH = size.height - (2 * paddingPx)
+                            val step = availableW / state.visibleCandles.size
+
+                            val localIndex = ((position.x - paddingPx) / step)
+                                .toInt().coerceIn(0, state.visibleCandles.size - 1)
+                            val globalIndex = currentRange.first + localIndex
+
+                            val relativeY = (position.y - paddingPx) / availableH
+                            val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
+
+                            onLineAdded(
+                                TrendLine(
+                                    startIndex = startPt.first,
+                                    startPrice = startPt.second,
+                                    endIndex = globalIndex,
+                                    endPrice = price
+                                )
+                            )
+                        }
+                        onFirstPointChanged(null)
+                        onCurrentTouchPosChanged(null)
+                        change.consume()
+                    }
+                }
             }
         }
     }

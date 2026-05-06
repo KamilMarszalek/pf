@@ -41,18 +41,6 @@ fun StockCharts(
         Column(
             modifier = modifier
                 .onSizeChanged { chartWidthPx = it.width.toFloat() }
-                .chartDrag(
-                    chartWidthPx = chartWidthPx,
-                    visibleRange = visibleRange,
-                    totalCount = totalCount,
-                    onRangeChange = { visibleRange = it },
-                    isDrawingMode = isDrawingMode
-                )
-                .chartZoom(
-                    visibleRange = visibleRange,
-                    totalCount = totalCount,
-                    onRangeChange = { visibleRange = it },
-                ),
         ) {
             Row(
                 modifier = Modifier
@@ -87,8 +75,21 @@ fun StockCharts(
                 trendLines = trendLines,
                 onLineAdded = { newLine ->
                     trendLines.add(newLine)
-                    isDrawingMode = false // Automatyczne wyłączenie po narysowaniu
+                    isDrawingMode = false
                 },
+                interactiveModifier = Modifier
+                    .chartDrag(
+                        chartWidthPx = chartWidthPx,
+                        visibleRange = visibleRange,
+                        totalCount = totalCount,
+                        onRangeChange = { visibleRange = it },
+                        isDrawingMode = isDrawingMode
+                    )
+                    .chartZoom(
+                        visibleRange = visibleRange,
+                        totalCount = totalCount,
+                        onRangeChange = { visibleRange = it },
+                    ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(400.dp)

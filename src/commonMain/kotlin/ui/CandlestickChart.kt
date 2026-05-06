@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -26,12 +28,23 @@ fun CandlestickChart(
     isDrawingMode: Boolean,
     trendLines: List<TrendLine>,
     onLineAdded: (TrendLine) -> Unit,
+    interactiveModifier: Modifier,
     modifier: Modifier = Modifier,
 ) {
     if (candles.isEmpty()) return
 
     val textMeasurer = rememberTextMeasurer()
     val paddingPx = 30f
+
+    var firstPoint by remember { mutableStateOf<Pair<Int, Double>?>(null) }
+    var currentTouchPos by remember { mutableStateOf<Offset?>(null) }
+
+    LaunchedEffect(isDrawingMode) {
+        if (!isDrawingMode) {
+            firstPoint = null
+            currentTouchPos = null
+        }
+    }
 
     val chartState by remember(candles, sma20, ema20, visibleRange) {
         derivedStateOf {
@@ -55,16 +68,23 @@ fun CandlestickChart(
             )
         }
     }
+
+    val drawingModifier = Modifier
+        .drawTrendLine(
+            isDrawingMode = isDrawingMode,
+            chartState = chartState,
+            visibleRange = visibleRange,
+            paddingPx = 30f,
+            firstPoint = firstPoint,
+            onFirstPointChanged = { firstPoint = it },
+            onCurrentTouchPosChanged = { currentTouchPos = it },
+            onLineAdded = onLineAdded
+        )
+
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .drawTrendLine(
-                isDrawingMode = isDrawingMode,
-                chartState = chartState,
-                visibleRange = visibleRange,
-                paddingPx = paddingPx,
-                onLineAdded = onLineAdded
-            )
+            .then( if (isDrawingMode) drawingModifier else interactiveModifier )
     ) {
         val state = chartState ?: return@Canvas
 
@@ -93,7 +113,10 @@ fun CandlestickChart(
         drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
         drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
 
-        //user lines
+        //trend lines
+        if (firstPoint != null && currentTouchPos != null) {
+            drawGhostLine(firstPoint!!, currentTouchPos!!, getX, getY, visibleRange)
+        }
         drawUserLines(trendLines, getX, getY, visibleRange)
     }
 }
@@ -119,6 +142,33 @@ fun DrawScope.drawUserLines(
             strokeWidth = 3f
         )
     }
+}
+
+fun DrawScope.drawGhostLine(
+    firstPoint: Pair<Int, Double>,
+    currentTouchPos: Offset,
+    getX: (Int) -> Float,
+    getY: (Double) -> Float,
+    visibleRange: IntRange
+) {
+    val startX = getX(firstPoint.first - visibleRange.first)
+    val startY = getY(firstPoint.second)
+
+    drawLine(
+        color = Color.Yellow.copy(alpha = 0.2f),
+        start = Offset(startX, startY),
+        end = currentTouchPos,
+        strokeWidth = 15f,
+        cap = StrokeCap.Round
+    )
+
+    drawLine(
+        color = Color.Yellow,
+        start = Offset(startX, startY),
+        end = currentTouchPos,
+        strokeWidth = 2f,
+        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
+    )
 }
 
 private fun DrawScope.drawYAxisLabels(
