@@ -3,10 +3,7 @@ package ui
 import analysis.StockAnalysis
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -43,29 +40,62 @@ fun StockCharts(
                 .onSizeChanged { chartWidthPx = it.width.toFloat() }
         ) {
             Row(
-                modifier = Modifier
-                    .align(Alignment.End)
-            ) {
-                IconButton(
-                    onClick = { isDrawingMode = !isDrawingMode }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        tint = if (isDrawingMode) Color.Magenta else Color.Black
-                    )
+                Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            )  {
+                Row {
+                    //TODO onClicks
+                    IconButton(
+                        onClick = {}
+                    ) {
+                        Text("5Y")
+                    }
+                    IconButton(
+                        onClick = {},
+                    ) {
+                        Text("1Y")
+                    }
+                    IconButton(
+                        onClick = {},
+                    ) {
+                        Text("6M")
+                    }
+                    IconButton(
+                        onClick = {},
+                    ) {
+                        Text("3M")
+                    }
+                    IconButton(
+                        onClick = {},
+                    ) {
+                        Text("1M")
+                    }
                 }
-                Spacer(Modifier.width(10.dp))
-                IconButton(
-                    onClick = { trendLines.clear() }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Clear",
-                        tint = Color.Black
-                    )
+                Row {
+                    IconButton(
+                        onClick = { isDrawingMode = !isDrawingMode }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = if (isDrawingMode) Color.Magenta else Color.Black
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    IconButton(
+                        onClick = { trendLines.clear() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Clear",
+                            tint = Color.Black
+                        )
+                    }
                 }
             }
+
             CandlestickChart(
                 candles = analysis.candles,
                 sma20 = analysis.sma20,
