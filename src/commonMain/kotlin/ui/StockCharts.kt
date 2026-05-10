@@ -52,6 +52,7 @@ fun StockCharts(
     ) {
         Column(
             modifier = modifier
+                .fillMaxSize()
                 .onSizeChanged { chartWidthPx = it.width.toFloat() }
         ) {
             Row(
@@ -137,7 +138,7 @@ fun StockCharts(
                     ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(400.dp)
+                    .weight(1f)
                     .padding(top = 8.dp),
             )
 
