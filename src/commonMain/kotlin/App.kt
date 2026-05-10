@@ -1,4 +1,4 @@
-import analysis.analyzeCandles
+import analysis.StockAnalysis
 import analysis.exportAnalysisToCsv
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -26,12 +26,12 @@ fun App() {
     var exportMessage by remember { mutableStateOf<String?>(null) }
     // Immutable state (on new state old one is overwritten)
     var state by remember { mutableStateOf<AppState>(AppState.Idle) }
-
+    var currentAnalysis by remember { mutableStateOf<StockAnalysis?>(null) }
     suspend fun loadAnalysis(symbol: String) {
         state = AppState.Loading
 
         state = when (val result = stockProvider.fetchCandles(symbol)) {
-            is ApiResult.Success -> AppState.Success(symbol, analyzeCandles(result.data))
+            is ApiResult.Success -> AppState.Success(symbol, result.data)
             is ApiResult.Failure -> AppState.Error(result.message)
         }
     }
@@ -71,7 +71,7 @@ fun App() {
                     enabled = state is AppState.Success,
                     onClick = {
                         val successState = state as? AppState.Success ?: return@Button
-                        val csv = exportAnalysisToCsv(successState.analysis)
+                        val csv = exportAnalysisToCsv(currentAnalysis ?: return@Button)
                         val filename = "${successState.symbol}_analysis.csv"
 
                         exportMessage = when (val result = saveTextFile(filename, csv)) {
@@ -97,7 +97,8 @@ fun App() {
 
                 is AppState.Success -> {
                     StockCharts(
-                        candles = current.analysis.candles,
+                        candles = current.candles,
+                        onAnalysisReady = { currentAnalysis = it },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

@@ -1,5 +1,6 @@
 package ui
 
+import analysis.StockAnalysis
 import analysis.analyzeCandles
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import data.TrendLine
 @Composable
 fun StockCharts(
     candles: List<Candle>,
+    onAnalysisReady: (StockAnalysis) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val totalCount = candles.size
@@ -36,6 +38,9 @@ fun StockCharts(
 
     val analysis by remember(candles, smaPeriod, emaPeriod, rsiPeriod) {
         derivedStateOf { analyzeCandles(candles, smaPeriod, emaPeriod, rsiPeriod) }
+    }
+    LaunchedEffect(analysis) {
+        onAnalysisReady(analysis)
     }
 
     var visibleRange by remember(totalCount) {
