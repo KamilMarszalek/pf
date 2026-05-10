@@ -7,6 +7,8 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +29,10 @@ fun StockCharts(
     var smaPeriod by remember { mutableStateOf(20) }
     var emaPeriod by remember { mutableStateOf(20) }
     var rsiPeriod by remember { mutableStateOf(14) }
+
+    var smaVisible by remember { mutableStateOf(true) }
+    var emaVisible by remember { mutableStateOf(true) }
+    var rsiVisible by remember { mutableStateOf(true) }
 
     val analysis by remember(candles, smaPeriod, emaPeriod, rsiPeriod) {
         derivedStateOf { analyzeCandles(candles, smaPeriod, emaPeriod, rsiPeriod) }
@@ -107,8 +113,8 @@ fun StockCharts(
 
             CandlestickChart(
                 candles = analysis.candles,
-                sma = analysis.sma,
-                ema = analysis.ema,
+                sma = if (smaVisible) analysis.sma else emptyList(),
+                ema = if (emaVisible) analysis.ema else emptyList(),
                 visibleRange = visibleRange,
                 isDrawingMode = isDrawingMode,
                 trendLines = trendLines,
@@ -145,11 +151,16 @@ fun StockCharts(
                     style = MaterialTheme.typography.caption,
                     modifier = Modifier.width(50.dp)
                 )
+                IconButton(onClick = { smaVisible = !smaVisible }, modifier = Modifier.size(20.dp)) {
+                    Icon(
+                        imageVector = if (smaVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "Toggle SMA",
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
                 Slider(
-                    value = smaPeriod.toFloat(),
-                    onValueChange = { smaPeriod = it.toInt() },
-                    valueRange = 5f..200f,
-                    modifier = Modifier.width(120.dp).height(24.dp)
+                    value = smaPeriod.toFloat(), onValueChange = { smaPeriod = it.toInt() },
+                    valueRange = 5f..200f, modifier = Modifier.width(120.dp).height(24.dp)
                 )
 
                 Spacer(Modifier.width(16.dp))
@@ -160,11 +171,16 @@ fun StockCharts(
                     style = MaterialTheme.typography.caption,
                     modifier = Modifier.width(50.dp)
                 )
+                IconButton(onClick = { emaVisible = !emaVisible }, modifier = Modifier.size(20.dp)) {
+                    Icon(
+                        imageVector = if (emaVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "Toggle EMA",
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
                 Slider(
-                    value = emaPeriod.toFloat(),
-                    onValueChange = { emaPeriod = it.toInt() },
-                    valueRange = 5f..200f,
-                    modifier = Modifier.width(120.dp).height(24.dp)
+                    value = emaPeriod.toFloat(), onValueChange = { emaPeriod = it.toInt() },
+                    valueRange = 5f..200f, modifier = Modifier.width(120.dp).height(24.dp)
                 )
             }
 
@@ -177,6 +193,13 @@ fun StockCharts(
                     style = MaterialTheme.typography.caption,
                     modifier = Modifier.width(50.dp)
                 )
+                IconButton(onClick = { rsiVisible = !rsiVisible }, modifier = Modifier.size(20.dp)) {
+                    Icon(
+                        imageVector = if (rsiVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "Toggle RSI",
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
                 Slider(
                     value = rsiPeriod.toFloat(),
                     onValueChange = { rsiPeriod = it.toInt() },
@@ -185,30 +208,31 @@ fun StockCharts(
                 )
             }
 
+            if (rsiVisible) {
+                Row {
+                    Text(
+                        "— 70 (overbought)",
+                        style = MaterialTheme.typography.caption,
+                        color = Color(0xFFEF5350),
+                    )
 
+                    Spacer(Modifier.width(16.dp))
 
-            RsiChart(
-                rsi = analysis.rsi,
-                visibleRange = visibleRange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp),
-            )
-
-            Row {
-                Text(
-                    "— 70 (overbought)",
-                    style = MaterialTheme.typography.caption,
-                    color = Color(0xFFEF5350),
+                    Text(
+                        "— 30 (oversold)",
+                        style = MaterialTheme.typography.caption,
+                        color = Color(0xFF26A69A),
+                    )
+                }
+                RsiChart(
+                    rsi = analysis.rsi,
+                    visibleRange = visibleRange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
                 )
 
-                Spacer(Modifier.width(16.dp))
 
-                Text(
-                    "— 30 (oversold)",
-                    style = MaterialTheme.typography.caption,
-                    color = Color(0xFF26A69A),
-                )
             }
         }
     }

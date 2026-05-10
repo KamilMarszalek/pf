@@ -13,7 +13,7 @@ actual object AppConfig {
 
 fun main() = application {
     val windowState = rememberWindowState(
-        size = DpSize(1200.dp, 900.dp)
+        size = DpSize(1200.dp, 800.dp)
     )
 
     Window(
