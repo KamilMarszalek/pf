@@ -7,19 +7,30 @@ import indicators.simpleMovingAverage
 
 data class StockAnalysis(
     val candles: List<Candle>,
-    val sma20: List<Double?>,
-    val ema20: List<Double?>,
-    val rsi14: List<Double?>,
+    val smaPeriod: Int,
+    val emaPeriod: Int,
+    val rsiPeriod: Int,
+    val sma: List<Double?>,
+    val ema: List<Double?>,
+    val rsi: List<Double?>,
 )
 
-fun analyzeCandles(candles: List<Candle>): StockAnalysis {
+fun analyzeCandles(
+    candles: List<Candle>,
+    smaPeriod: Int = 20,
+    emaPeriod: Int = 20,
+    rsiPeriod: Int = 14,
+): StockAnalysis {
     val candlesAscending = candles.sortedBy { it.date }
     val closes = candlesAscending.map { it.close }
 
     return StockAnalysis(
         candles = candlesAscending,
-        sma20 = simpleMovingAverage(closes, 20),
-        ema20 = exponentialMovingAverage(closes, 20),
-        rsi14 = relativeStrengthIndex(closes, 14),
+        sma = simpleMovingAverage(closes, smaPeriod),
+        ema = exponentialMovingAverage(closes, emaPeriod),
+        rsi = relativeStrengthIndex(closes, rsiPeriod),
+        smaPeriod = smaPeriod,
+        emaPeriod = emaPeriod,
+        rsiPeriod = rsiPeriod,
     )
 }

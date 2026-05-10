@@ -1,6 +1,6 @@
 package ui
 
-import analysis.StockAnalysis
+import analysis.analyzeCandles
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -13,15 +13,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
+import data.Candle
 import data.TrendLine
 
 @Composable
 fun StockCharts(
-    analysis: StockAnalysis,
+    candles: List<Candle>,
     modifier: Modifier = Modifier,
 ) {
-    val totalCount = analysis.candles.size
+    val totalCount = candles.size
     if (totalCount == 0) return
+
+    var smaPeriod by remember { mutableStateOf(20) }
+    var emaPeriod by remember { mutableStateOf(20) }
+    var rsiPeriod by remember { mutableStateOf(14) }
+
+    val analysis by remember(candles, smaPeriod, emaPeriod, rsiPeriod) {
+        derivedStateOf { analyzeCandles(candles, smaPeriod, emaPeriod, rsiPeriod) }
+    }
 
     var visibleRange by remember(totalCount) {
         mutableStateOf(initialVisibleRange(totalCount, preferredCount = 100))
@@ -29,7 +38,7 @@ fun StockCharts(
 
     var chartWidthPx by remember { mutableStateOf(0f) }
 
-    var isDrawingMode by remember { mutableStateOf(false)}
+    var isDrawingMode by remember { mutableStateOf(false) }
     val trendLines = remember { mutableStateListOf<TrendLine>() }
 
     Box(
@@ -44,7 +53,7 @@ fun StockCharts(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
-            )  {
+            ) {
                 Row {
                     //TODO onClicks
                     IconButton(
@@ -98,8 +107,8 @@ fun StockCharts(
 
             CandlestickChart(
                 candles = analysis.candles,
-                sma20 = analysis.sma20,
-                ema20 = analysis.ema20,
+                sma = analysis.sma,
+                ema = analysis.ema,
                 visibleRange = visibleRange,
                 isDrawingMode = isDrawingMode,
                 trendLines = trendLines,
@@ -126,24 +135,60 @@ fun StockCharts(
                     .padding(top = 8.dp),
             )
 
-            Row(modifier = Modifier.padding(top = 4.dp)) {
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(modifier = Modifier.size(12.dp).background(Color(0xFFFFA726)))
-                Text(" SMA20", style = MaterialTheme.typography.caption)
+                Text(
+                    " SMA${analysis.smaPeriod}",
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.width(50.dp)
+                )
+                Slider(
+                    value = smaPeriod.toFloat(),
+                    onValueChange = { smaPeriod = it.toInt() },
+                    valueRange = 5f..200f,
+                    modifier = Modifier.width(120.dp).height(24.dp)
+                )
 
                 Spacer(Modifier.width(16.dp))
 
                 Box(modifier = Modifier.size(12.dp).background(Color(0xFF42A5F5)))
-                Text(" EMA20", style = MaterialTheme.typography.caption)
+                Text(
+                    " EMA${analysis.emaPeriod}",
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.width(50.dp)
+                )
+                Slider(
+                    value = emaPeriod.toFloat(),
+                    onValueChange = { emaPeriod = it.toInt() },
+                    valueRange = 5f..200f,
+                    modifier = Modifier.width(120.dp).height(24.dp)
+                )
             }
 
-            Text(
-                "RSI(14)",
-                style = MaterialTheme.typography.caption,
+            Row(
                 modifier = Modifier.padding(top = 8.dp),
-            )
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "RSI(${analysis.rsiPeriod})",
+                    style = MaterialTheme.typography.caption,
+                    modifier = Modifier.width(50.dp)
+                )
+                Slider(
+                    value = rsiPeriod.toFloat(),
+                    onValueChange = { rsiPeriod = it.toInt() },
+                    valueRange = 2f..50f,
+                    modifier = Modifier.width(120.dp).height(24.dp)
+                )
+            }
+
+
 
             RsiChart(
-                rsi14 = analysis.rsi14,
+                rsi = analysis.rsi,
                 visibleRange = visibleRange,
                 modifier = Modifier
                     .fillMaxWidth()

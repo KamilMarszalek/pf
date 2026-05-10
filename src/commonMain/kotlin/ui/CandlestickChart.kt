@@ -22,8 +22,8 @@ import data.TrendLine
 @Composable
 fun CandlestickChart(
     candles: List<Candle>,
-    sma20: List<Double?> = emptyList(),
-    ema20: List<Double?> = emptyList(),
+    sma: List<Double?> = emptyList(),
+    ema: List<Double?> = emptyList(),
     visibleRange: IntRange,
     isDrawingMode: Boolean,
     trendLines: List<TrendLine>,
@@ -46,7 +46,7 @@ fun CandlestickChart(
         }
     }
 
-    val chartState by remember(candles, sma20, ema20, visibleRange) {
+    val chartState by remember(candles, sma, ema, visibleRange) {
         derivedStateOf {
             val visibleCandles = candles.slice(visibleRange)
             if (visibleCandles.isEmpty()) return@derivedStateOf null
@@ -56,10 +56,11 @@ fun CandlestickChart(
             val priceRange = (priceMax - priceMin).takeIf { it > 0.0 } ?: 1.0
 
             val offset = visibleRange.first
-            val visibleSma = sma20.drop(offset).take(visibleCandles.size)
-            val visibleEma = ema20.drop(offset).take(visibleCandles.size)
+            val visibleSma = sma.drop(offset).take(visibleCandles.size)
+            val visibleEma = ema.drop(offset).take(visibleCandles.size)
 
-            ChartState(visibleCandles = visibleCandles,
+            ChartState(
+                visibleCandles = visibleCandles,
                 visibleSma = visibleSma,
                 visibleEma = visibleEma,
                 priceMin = priceMin,
@@ -84,7 +85,7 @@ fun CandlestickChart(
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .then( if (isDrawingMode) drawingModifier else interactiveModifier )
+            .then(if (isDrawingMode) drawingModifier else interactiveModifier)
     ) {
         val state = chartState ?: return@Canvas
 
@@ -95,8 +96,10 @@ fun CandlestickChart(
         val availableChartHeight = height - (2 * paddingPx)
 
         // pure transmutation functions
-        val getX = { index: Int -> paddingPx + index * (availableChartWidth / state.visibleCandles.size) + (availableChartWidth / state.visibleCandles.size / 2)}
-        val getY = { price: Double -> (paddingPx + availableChartHeight * (1.0 - (price - state.priceMin)/state.priceRange)).toFloat() }
+        val getX =
+            { index: Int -> paddingPx + index * (availableChartWidth / state.visibleCandles.size) + (availableChartWidth / state.visibleCandles.size / 2) }
+        val getY =
+            { price: Double -> (paddingPx + availableChartHeight * (1.0 - (price - state.priceMin) / state.priceRange)).toFloat() }
 
         //grid and labels
         drawYAxisLabels(state.priceMin, state.priceMax, getY, paddingPx, width, textMeasurer)
@@ -179,7 +182,7 @@ private fun DrawScope.drawYAxisLabels(
     width: Float,
     textMeasurer: TextMeasurer
 ) {
-    val steps  = 5
+    val steps = 5
     val stepValue = (max - min) / steps
     val textStyle = TextStyle(color = Color.Gray, fontSize = 10.sp)
 
@@ -252,7 +255,8 @@ private fun DrawScope.drawCandle(
     val isGreen = candle.close >= candle.open
     val color = if (isGreen) Color(0xFF26A69A) else Color(0xFFEF5350)
 
-    drawLine(color = color,
+    drawLine(
+        color = color,
         start = Offset(x, getY(candle.high)),
         end = Offset(x, getY(candle.low)),
         strokeWidth = 1.5f
