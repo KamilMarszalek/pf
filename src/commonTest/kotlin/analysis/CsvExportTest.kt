@@ -11,9 +11,12 @@ class CsvExportTest {
         val csv = exportAnalysisToCsv(
             StockAnalysis(
                 candles = emptyList(),
-                sma20 = emptyList(),
-                ema20 = emptyList(),
-                rsi14 = emptyList()
+                smaPeriod = 20,
+                emaPeriod = 20,
+                rsiPeriod = 14,
+                sma = emptyList(),
+                ema = emptyList(),
+                rsi = emptyList()
             )
         )
 
@@ -42,9 +45,12 @@ class CsvExportTest {
                         volume = 1500.0
                     )
                 ),
-                sma20 = listOf(10.5, 11.5),
-                ema20 = listOf(10.75, 11.75),
-                rsi14 = listOf(55.0, 60.25)
+                smaPeriod = 20,
+                emaPeriod = 20,
+                rsiPeriod = 14,
+                sma = listOf(10.5, 11.5),
+                ema = listOf(10.75, 11.75),
+                rsi = listOf(55.0, 60.25)
             )
         )
 
@@ -66,9 +72,12 @@ class CsvExportTest {
                     candle(date = "2026-05-01"),
                     candle(date = "2026-05-02")
                 ),
-                sma20 = listOf(null),
-                ema20 = emptyList(),
-                rsi14 = listOf(null, 47.5)
+                smaPeriod = 20,
+                emaPeriod = 20,
+                rsiPeriod = 14,
+                sma = listOf(null),
+                ema = emptyList(),
+                rsi = listOf(null, 47.5)
             )
         )
 
