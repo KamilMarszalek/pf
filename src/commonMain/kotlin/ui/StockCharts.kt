@@ -25,6 +25,8 @@ fun StockCharts(
     candles: List<Candle>,
     onAnalysisReady: (StockAnalysis) -> Unit = {},
     modifier: Modifier = Modifier,
+    sharedVisibleRange: IntRange? = null,
+    onVisibleRangeChange: (IntRange) -> Unit = {}
 ) {
     val totalCount = candles.size
     if (totalCount == 0) return
@@ -46,8 +48,17 @@ fun StockCharts(
         onAnalysisReady(analysis)
     }
 
-    var visibleRange by remember(totalCount) {
+    var localVisibleRange by remember(totalCount) {
         mutableStateOf(initialVisibleRange(totalCount, preferredCount = 100))
+    }
+    val isSharedMode = sharedVisibleRange != null && sharedVisibleRange != IntRange.EMPTY
+    val currentVisibleRange = if (isSharedMode) sharedVisibleRange!! else localVisibleRange
+    val updateVisibleRange: (IntRange) -> Unit = { newRange ->
+        if (isSharedMode) {
+            onVisibleRangeChange(newRange)
+        } else {
+            localVisibleRange = newRange
+        }
     }
 
     var chartWidthPx by remember { mutableStateOf(0f) }
@@ -56,11 +67,18 @@ fun StockCharts(
     val trendLines = remember { mutableStateListOf<TrendLine>() }
 
     val visibleRangeMarks = remember{ mutableStateOf(findVisibleRangeMarks(analysis.candles))}
-    var visibleRangeEnum by remember { mutableStateOf(detectVisibleRange(visibleRange, visibleRangeMarks.value)) }
+    var visibleRangeEnum by remember { mutableStateOf(detectVisibleRange(currentVisibleRange, visibleRangeMarks.value)) }
 
     // Side effect
-    LaunchedEffect(visibleRange) {
-        visibleRangeEnum = detectVisibleRange(visibleRange, visibleRangeMarks.value)
+    LaunchedEffect(currentVisibleRange) {
+        visibleRangeEnum = detectVisibleRange(currentVisibleRange, visibleRangeMarks.value)
+    }
+
+    // shared range init if empty
+    if (sharedVisibleRange == IntRange.EMPTY) {
+        SideEffect {
+            onVisibleRangeChange(initialVisibleRange(totalCount, preferredCount = 100))
+        }
     }
 
     Box(
@@ -79,7 +97,7 @@ fun StockCharts(
             ) {
                 Row {
                     IconButton(
-                        onClick = { visibleRange = getVisibleRange(VisibleRange.FIVE_YEAR, visibleRangeMarks.value) },
+                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.FIVE_YEAR, visibleRangeMarks.value)) },
                     ) {
                         Text(
                             text = "5Y",
@@ -87,7 +105,7 @@ fun StockCharts(
                         )
                     }
                     IconButton(
-                        onClick = { visibleRange = getVisibleRange(VisibleRange.ONE_YEAR, visibleRangeMarks.value) },
+                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.ONE_YEAR, visibleRangeMarks.value)) },
                     ) {
                         Text(
                             text = "1Y",
@@ -95,7 +113,7 @@ fun StockCharts(
                         )
                     }
                     IconButton(
-                        onClick = { visibleRange = getVisibleRange(VisibleRange.SIX_MONTHS, visibleRangeMarks.value) },
+                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.SIX_MONTHS, visibleRangeMarks.value)) },
                     ) {
                         Text(
                             text = "6M",
@@ -103,7 +121,7 @@ fun StockCharts(
                         )
                     }
                     IconButton(
-                        onClick = { visibleRange = getVisibleRange(VisibleRange.THREE_MONTHS, visibleRangeMarks.value) },
+                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.THREE_MONTHS, visibleRangeMarks.value)) },
                     ) {
                         Text(
                             text = "3M",
@@ -111,7 +129,7 @@ fun StockCharts(
                         )
                     }
                     IconButton(
-                        onClick = { visibleRange = getVisibleRange(VisibleRange.ONE_MONTH, visibleRangeMarks.value) },
+                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.ONE_MONTH, visibleRangeMarks.value)) },
                     ) {
                         Text(
                             text = "1M",
@@ -146,7 +164,7 @@ fun StockCharts(
                 candles = analysis.candles,
                 sma = if (smaVisible) analysis.sma else emptyList(),
                 ema = if (emaVisible) analysis.ema else emptyList(),
-                visibleRange = visibleRange,
+                visibleRange = currentVisibleRange,
                 isDrawingMode = isDrawingMode,
                 trendLines = trendLines,
                 onLineAdded = { newLine ->
@@ -156,15 +174,15 @@ fun StockCharts(
                 interactiveModifier = Modifier
                     .chartDrag(
                         chartWidthPx = chartWidthPx,
-                        visibleRange = visibleRange,
+                        visibleRange = currentVisibleRange,
                         totalCount = totalCount,
-                        onRangeChange = { visibleRange = it },
+                        onRangeChange = { updateVisibleRange(it) },
                         isDrawingMode = isDrawingMode
                     )
                     .chartZoom(
-                        visibleRange = visibleRange,
+                        visibleRange = currentVisibleRange,
                         totalCount = totalCount,
-                        onRangeChange = { visibleRange = it },
+                        onRangeChange = { updateVisibleRange(it) },
                     ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -257,7 +275,7 @@ fun StockCharts(
                 }
                 RsiChart(
                     rsi = analysis.rsi,
-                    visibleRange = visibleRange,
+                    visibleRange = currentVisibleRange,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),

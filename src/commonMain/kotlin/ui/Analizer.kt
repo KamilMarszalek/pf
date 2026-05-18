@@ -20,7 +20,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun Analizer(
     stockProvider: StockProvider,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    sharedVisibleRange: IntRange?,
+    onVisibleRangeChange: (IntRange) -> Unit
 ) {
     var ticker by remember { mutableStateOf("") }
     var exportMessage by remember { mutableStateOf<String?>(null) }
@@ -97,6 +99,8 @@ fun Analizer(
                     candles = current.candles,
                     onAnalysisReady = { currentAnalysis = it },
                     modifier = Modifier.fillMaxWidth(),
+                    sharedVisibleRange = sharedVisibleRange,
+                    onVisibleRangeChange = onVisibleRangeChange
                 )
             }
         }

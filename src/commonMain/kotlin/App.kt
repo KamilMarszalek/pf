@@ -28,6 +28,8 @@ fun App() {
 
     var comparingMode by remember { mutableStateOf(false) }
 
+    var sharedVisibleRange by remember { mutableStateOf(IntRange.EMPTY) }
+
     MaterialTheme {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -48,13 +50,23 @@ fun App() {
             }
 
             if (!comparingMode) {
-                Analizer(stockProvider, scope)
+                Analizer(
+                    stockProvider,
+                    scope,
+                    sharedVisibleRange = null,
+                    onVisibleRangeChange = {}
+                )
             } else {
                 Row(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
-                        Analizer(stockProvider, scope)
+                        Analizer(
+                            stockProvider,
+                            scope,
+                            sharedVisibleRange = sharedVisibleRange,
+                            onVisibleRangeChange = { sharedVisibleRange = it }
+                        )
                     }
 
                     Box(
@@ -65,7 +77,12 @@ fun App() {
                     )
 
                     Box(modifier = Modifier.weight(1f)) {
-                        Analizer(stockProvider, scope)
+                        Analizer(
+                            stockProvider,
+                            scope,
+                            sharedVisibleRange = sharedVisibleRange,
+                            onVisibleRangeChange = { sharedVisibleRange = it }
+                        )
                     }
                 }
             }
