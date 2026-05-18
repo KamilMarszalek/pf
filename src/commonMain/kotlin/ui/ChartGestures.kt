@@ -199,3 +199,58 @@ fun Modifier.drawTrendLine(
         }
     }
 }
+
+fun Modifier.chartMeasure(
+    isMeasuringMode: Boolean,
+    chartState: ChartState?,
+    visibleRange: IntRange,
+    paddingPx: Float,
+    onMeasureStartIdxChanged: (Int?) -> Unit,
+    onMeasureEndIdxChanged: (Int?) -> Unit,
+    onIsDraggingChanged: (Boolean) -> Unit
+): Modifier = composed {
+    val currentRange by rememberUpdatedState(visibleRange)
+    val currentChartState by rememberUpdatedState(chartState)
+
+    pointerInput(isMeasuringMode, chartState) {
+        if (!isMeasuringMode || chartState == null) {
+            return@pointerInput
+        }
+
+        fun getCandleIndex(pointerX: Float): Int? {
+            val state = currentChartState ?: return null
+            val availableW = size.width - (2 * paddingPx)
+            if (availableW <= 0 || state.visibleCandles.isEmpty()) return null
+
+            val step = availableW / state.visibleCandles.size
+            val localIndex = ((pointerX - paddingPx) / step)
+                .toInt().coerceIn(0, state.visibleCandles.size - 1)
+
+            return currentRange.first + localIndex
+        }
+
+        detectDragGestures(
+            onDragStart = { startOffset ->
+                onIsDraggingChanged(true)
+                val startIdx = getCandleIndex(startOffset.x)
+                onMeasureStartIdxChanged(startIdx)
+                onMeasureEndIdxChanged(startIdx)
+            },
+            onDragEnd = {
+                onIsDraggingChanged(false)
+            },
+            onDragCancel = {
+                onIsDraggingChanged(false)
+                onMeasureStartIdxChanged(null)
+                onMeasureEndIdxChanged(null)
+            },
+            onDrag = { change, dragAmount ->
+                change.consume()
+                val currentIdx = getCandleIndex(change.position.x)
+                if (currentIdx != null) {
+                    onMeasureEndIdxChanged(currentIdx)
+                }
+            }
+        )
+    }
+}

@@ -15,8 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import data.Candle
+import data.ChartState
 import data.TrendLine
 import ui.ActiveRangeUtils.*
 
@@ -79,6 +81,31 @@ fun StockCharts(
         SideEffect {
             onVisibleRangeChange(initialVisibleRange(totalCount, preferredCount = 100))
         }
+    }
+
+    // Measure gesture
+    var isMeasuringMode by remember { mutableStateOf(false) }
+    var measureStartIdx by remember { mutableStateOf<Int?>(null) }
+    var measureEndIdx by remember { mutableStateOf<Int?>(null) }
+    var isMeasuringDragActive by remember { mutableStateOf(false) } // Czy użytkownik trzyma przycisk i przeciąga
+
+    val paddingDp = 16.dp
+    val paddingPx = with(LocalDensity.current) { paddingDp.toPx() }
+
+    val chartState = remember(analysis.candles, currentVisibleRange) {
+        val visibleCandles = analysis.candles.filterIndexed { index, _ -> index in currentVisibleRange }
+        if (visibleCandles.isNotEmpty()) {
+            val minPrice = visibleCandles.minOf { it.low }
+            val maxPrice = visibleCandles.maxOf { it.high }
+            ChartState(
+                visibleCandles = visibleCandles,
+                priceMin = minPrice,
+                priceMax = maxPrice,
+                priceRange = maxPrice - minPrice,
+                visibleEma = analysis.ema,
+                visibleSma = analysis.sma
+            )
+        } else null
     }
 
     Box(
@@ -147,48 +174,85 @@ fun StockCharts(
                             tint = if (isDrawingMode) Color.Magenta else Color.Black
                         )
                     }
-                    Spacer(Modifier.width(10.dp))
+
+                    Spacer(Modifier.width(8.dp))
+
                     IconButton(
-                        onClick = { trendLines.clear() }
+                        onClick = {
+                            isMeasuringMode = !isMeasuringMode
+                            if (isMeasuringMode) {
+                                isDrawingMode = false
+                                measureStartIdx = null
+                                measureEndIdx = null
+                            }
+                        }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Clear",
-                            tint = Color.Black
+                        Text(
+                            text = "%",
+                            style = MaterialTheme.typography.h6,
+                            color = if (isMeasuringMode) Color.Magenta else Color.Black
                         )
+                    }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = {
+                            trendLines.clear()
+                            measureStartIdx = null
+                            measureEndIdx = null
+                        }
+                    ) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Clear")
                     }
                 }
             }
 
-            CandlestickChart(
-                candles = analysis.candles,
-                sma = if (smaVisible) analysis.sma else emptyList(),
-                ema = if (emaVisible) analysis.ema else emptyList(),
-                visibleRange = currentVisibleRange,
-                isDrawingMode = isDrawingMode,
-                trendLines = trendLines,
-                onLineAdded = { newLine ->
-                    trendLines.add(newLine)
-                    isDrawingMode = false
-                },
-                interactiveModifier = Modifier
-                    .chartDrag(
-                        chartWidthPx = chartWidthPx,
-                        visibleRange = currentVisibleRange,
-                        totalCount = totalCount,
-                        onRangeChange = { updateVisibleRange(it) },
-                        isDrawingMode = isDrawingMode
-                    )
-                    .chartZoom(
-                        visibleRange = currentVisibleRange,
-                        totalCount = totalCount,
-                        onRangeChange = { updateVisibleRange(it) },
-                    ),
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(top = 8.dp),
-            )
+                    .padding(top = 8.dp)
+            ) {
+                CandlestickChart(
+                    candles = analysis.candles,
+                    sma = if (smaVisible) analysis.sma else emptyList(),
+                    ema = if (emaVisible) analysis.ema else emptyList(),
+                    visibleRange = currentVisibleRange,
+                    isDrawingMode = isDrawingMode,
+                    trendLines = trendLines,
+                    onLineAdded = { newLine ->
+                        trendLines.add(newLine)
+                        isDrawingMode = false
+                    },
+                    interactiveModifier = Modifier
+                        .chartDrag(
+                            chartWidthPx = chartWidthPx,
+                            visibleRange = currentVisibleRange,
+                            totalCount = totalCount,
+                            onRangeChange = { updateVisibleRange(it) },
+                            isDrawingMode = isDrawingMode || isMeasuringMode
+                        )
+                        .chartZoom(
+                            visibleRange = currentVisibleRange,
+                            totalCount = totalCount,
+                            onRangeChange = { updateVisibleRange(it) },
+                        )
+                        .chartMeasure(
+                            isMeasuringMode = isMeasuringMode,
+                            chartState = chartState,
+                            visibleRange = currentVisibleRange,
+                            paddingPx = paddingPx,
+                            onMeasureStartIdxChanged = { measureStartIdx = it },
+                            onMeasureEndIdxChanged = { measureEndIdx = it },
+                            onIsDraggingChanged = { isMeasuringDragActive = it }
+                        ),
+                    modifier = Modifier.fillMaxSize(),
+                    measureStartIdx = measureStartIdx,
+                    measureEndIdx = measureEndIdx,
+                    isMeasuringDragActive = isMeasuringDragActive
+                )
+            }
 
             Row(
                 modifier = Modifier.padding(top = 4.dp),
@@ -280,8 +344,6 @@ fun StockCharts(
                         .fillMaxWidth()
                         .height(200.dp),
                 )
-
-
             }
         }
     }

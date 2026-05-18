@@ -1,8 +1,14 @@
 package ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -14,6 +20,7 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.Candle
 import data.ChartState
@@ -30,6 +37,9 @@ fun CandlestickChart(
     onLineAdded: (TrendLine) -> Unit,
     interactiveModifier: Modifier,
     modifier: Modifier = Modifier,
+    measureStartIdx: Int?,
+    measureEndIdx: Int?,
+    isMeasuringDragActive: Boolean
 ) {
     if (candles.isEmpty()) return
 
@@ -75,52 +85,125 @@ fun CandlestickChart(
             isDrawingMode = isDrawingMode,
             chartState = chartState,
             visibleRange = visibleRange,
-            paddingPx = 30f,
+            paddingPx = paddingPx,
             firstPoint = firstPoint,
             onFirstPointChanged = { firstPoint = it },
             onCurrentTouchPosChanged = { currentTouchPos = it },
             onLineAdded = onLineAdded
         )
 
-    Canvas(
-        modifier = modifier
-            .fillMaxSize()
-            .then(if (isDrawingMode) drawingModifier else interactiveModifier)
-    ) {
-        val state = chartState ?: return@Canvas
+    Box(modifier = modifier) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (isDrawingMode) drawingModifier else interactiveModifier)
+        ) {
+            val state = chartState ?: return@Canvas
 
-        val width = size.width
-        val height = size.height
+            val width = size.width
+            val height = size.height
 
-        val availableChartWidth = width - (2 * paddingPx)
-        val availableChartHeight = height - (2 * paddingPx)
+            val availableChartWidth = width - (2 * paddingPx)
+            val availableChartHeight = height - (2 * paddingPx)
 
-        // pure transmutation functions
-        val getX =
-            { index: Int -> paddingPx + index * (availableChartWidth / state.visibleCandles.size) + (availableChartWidth / state.visibleCandles.size / 2) }
-        val getY =
-            { price: Double -> (paddingPx + availableChartHeight * (1.0 - (price - state.priceMin) / state.priceRange)).toFloat() }
+            val getX = { index: Int ->
+                paddingPx + index * (availableChartWidth / state.visibleCandles.size) + (availableChartWidth / state.visibleCandles.size / 2)
+            }
+            val getY = { price: Double ->
+                (paddingPx + availableChartHeight * (1.0 - (price - state.priceMin) / state.priceRange)).toFloat()
+            }
 
-        //grid and labels
-        drawYAxisLabels(state.priceMin, state.priceMax, getY, paddingPx, width, textMeasurer)
-        drawXAxisLabels(state.visibleCandles, getX, paddingPx, height, textMeasurer)
+            drawYAxisLabels(state.priceMin, state.priceMax, getY, paddingPx, width, textMeasurer)
+            drawXAxisLabels(state.visibleCandles, getX, paddingPx, height, textMeasurer)
 
-        //candles
-        val candleWidth = availableChartWidth / state.visibleCandles.size
-        val bodyWidth = candleWidth * 0.6f
-        state.visibleCandles.forEachIndexed { i, candle ->
-            drawCandle(candle, getX(i), bodyWidth, getY)
+            if (measureStartIdx != null && measureEndIdx != null) {
+                val leftIdx = minOf(measureStartIdx, measureEndIdx)
+                val rightIdx = maxOf(measureStartIdx, measureEndIdx)
+
+                val leftX = getX(leftIdx - visibleRange.first)
+                val rightX = getX(rightIdx - visibleRange.first)
+
+                if (leftIdx != rightIdx) {
+                    val fillLeft = leftX.coerceIn(paddingPx, width - paddingPx)
+                    val fillRight = rightX.coerceIn(paddingPx, width - paddingPx)
+                    drawRect(
+                        color = Color.Gray.copy(alpha = 0.15f),
+                        topLeft = Offset(fillLeft, paddingPx),
+                        size = Size(fillRight - fillLeft, height - (2 * paddingPx))
+                    )
+                }
+
+                if (leftIdx in visibleRange) {
+                    drawLine(
+                        color = Color.Gray,
+                        start = Offset(leftX, paddingPx),
+                        end = Offset(leftX, height - paddingPx),
+                        strokeWidth = 2f
+                    )
+                }
+
+                if (rightIdx in visibleRange) {
+                    drawLine(
+                        color = Color.Gray,
+                        start = Offset(rightX, paddingPx),
+                        end = Offset(rightX, height - paddingPx),
+                        strokeWidth = 2f,
+                        pathEffect = if (isMeasuringDragActive) {
+                            PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                        } else null
+                    )
+                }
+            }
+
+            val candleWidth = availableChartWidth / state.visibleCandles.size
+            val bodyWidth = candleWidth * 0.6f
+            state.visibleCandles.forEachIndexed { i, candle ->
+                drawCandle(candle, getX(i), bodyWidth, getY)
+            }
+
+            drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
+            drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
+
+            if (firstPoint != null && currentTouchPos != null) {
+                drawGhostLine(firstPoint!!, currentTouchPos!!, getX, getY, visibleRange)
+            }
+            drawUserLines(trendLines, getX, getY, visibleRange)
         }
 
-        //indicators
-        drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
-        drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
+        if (measureStartIdx != null && measureEndIdx != null) {
+            val leftIdx = minOf(measureStartIdx, measureEndIdx)
+            val rightIdx = maxOf(measureStartIdx, measureEndIdx)
 
-        //trend lines
-        if (firstPoint != null && currentTouchPos != null) {
-            drawGhostLine(firstPoint!!, currentTouchPos!!, getX, getY, visibleRange)
+            val startCandle = candles.getOrNull(leftIdx)
+            val endCandle = candles.getOrNull(rightIdx)
+
+            if (startCandle != null && endCandle != null) {
+                val priceStart = (startCandle.high + startCandle.low + startCandle.close) / 3.0
+                val priceEnd = (endCandle.high + endCandle.low + endCandle.close) / 3.0
+
+                val priceChange = priceEnd - priceStart
+                val percentageChange = if (priceStart != 0.0) (priceChange / priceStart) * 100 else 0.0
+
+                val isPositive = percentageChange >= 0
+                val badgeColor = if (isPositive) Color(0xFF26A69A) else Color(0xFFEF5350)
+                val sign = if (isPositive) "▲ +" else "▼ "
+
+                Card(
+                    backgroundColor = badgeColor.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp),
+                    elevation = 4.dp
+                ) {
+                    Text(
+                        text = String.format(java.util.Locale.US, "%s%.2f%%", sign, percentageChange),
+                        color = Color.White,
+                        style = MaterialTheme.typography.subtitle2,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
         }
-        drawUserLines(trendLines, getX, getY, visibleRange)
     }
 }
 
