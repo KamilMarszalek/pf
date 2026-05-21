@@ -28,7 +28,9 @@ fun StockCharts(
     onAnalysisReady: (StockAnalysis) -> Unit = {},
     modifier: Modifier = Modifier,
     sharedVisibleRange: IntRange? = null,
-    onVisibleRangeChange: (IntRange) -> Unit = {}
+    onVisibleRangeChange: (IntRange) -> Unit = {},
+    sharedMeasureState: MeasureState? = null,
+    onMeasureRangeChange: (MeasureState) -> Unit = {}
 ) {
     val totalCount = candles.size
     if (totalCount == 0) return
@@ -41,6 +43,8 @@ fun StockCharts(
     var emaVisible by remember { mutableStateOf(true) }
     var rsiVisible by remember { mutableStateOf(true) }
 
+    var chartWidthPx by remember { mutableStateOf(0f) }
+
     val analysis by remember(candles, smaPeriod, emaPeriod, rsiPeriod) {
         derivedStateOf { analyzeCandles(candles, smaPeriod, emaPeriod, rsiPeriod) }
     }
@@ -50,6 +54,7 @@ fun StockCharts(
         onAnalysisReady(analysis)
     }
 
+    // Panning and zooming gestures
     var localVisibleRange by remember(totalCount) {
         mutableStateOf(initialVisibleRange(totalCount, preferredCount = 100))
     }
@@ -63,14 +68,8 @@ fun StockCharts(
         }
     }
 
-    var chartWidthPx by remember { mutableStateOf(0f) }
-
-    var isDrawingMode by remember { mutableStateOf(false) }
-    val trendLines = remember { mutableStateListOf<TrendLine>() }
-
     val visibleRangeMarks = remember{ mutableStateOf(findVisibleRangeMarks(analysis.candles))}
     var visibleRangeEnum by remember { mutableStateOf(detectVisibleRange(currentVisibleRange, visibleRangeMarks.value)) }
-
     // Side effect
     LaunchedEffect(currentVisibleRange) {
         visibleRangeEnum = detectVisibleRange(currentVisibleRange, visibleRangeMarks.value)
@@ -83,11 +82,13 @@ fun StockCharts(
         }
     }
 
+    // Drawing gesture
+    var isDrawingMode by remember { mutableStateOf(false) }
+    val trendLines = remember { mutableStateListOf<TrendLine>() }
+
     // Measure gesture
     var isMeasuringMode by remember { mutableStateOf(false) }
-    var measureStartIdx by remember { mutableStateOf<Int?>(null) }
-    var measureEndIdx by remember { mutableStateOf<Int?>(null) }
-    var isMeasuringDragActive by remember { mutableStateOf(false) } // Czy użytkownik trzyma przycisk i przeciąga
+    var measureState by remember { mutableStateOf(MeasureState()) }
 
     val paddingDp = 16.dp
     val paddingPx = with(LocalDensity.current) { paddingDp.toPx() }
@@ -182,8 +183,6 @@ fun StockCharts(
                             isMeasuringMode = !isMeasuringMode
                             if (isMeasuringMode) {
                                 isDrawingMode = false
-                                measureStartIdx = null
-                                measureEndIdx = null
                             }
                         }
                     ) {
@@ -199,8 +198,7 @@ fun StockCharts(
                     IconButton(
                         onClick = {
                             trendLines.clear()
-                            measureStartIdx = null
-                            measureEndIdx = null
+                            measureState = MeasureState()
                         }
                     ) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Clear")
@@ -243,14 +241,20 @@ fun StockCharts(
                             chartState = chartState,
                             visibleRange = currentVisibleRange,
                             paddingPx = paddingPx,
-                            onMeasureStartIdxChanged = { measureStartIdx = it },
-                            onMeasureEndIdxChanged = { measureEndIdx = it },
-                            onIsDraggingChanged = { isMeasuringDragActive = it }
+                            onMeasureStartIdxChanged = { newIdx ->
+                                measureState = measureState.copy(startIdx = newIdx)
+                            },
+                            onMeasureEndIdxChanged = { newIdx ->
+                                measureState = measureState.copy(endIdx = newIdx)
+                            },
+                            onIsDraggingChanged = { dragging ->
+                                measureState = measureState.copy(isDragging = dragging)
+                            }
                         ),
                     modifier = Modifier.fillMaxSize(),
-                    measureStartIdx = measureStartIdx,
-                    measureEndIdx = measureEndIdx,
-                    isMeasuringDragActive = isMeasuringDragActive
+                    measureStartIdx = measureState.startIdx,
+                    measureEndIdx = measureState.endIdx,
+                    isMeasuringDragActive = measureState.isDragging
                 )
             }
 
