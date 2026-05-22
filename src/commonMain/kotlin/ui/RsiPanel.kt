@@ -1,12 +1,27 @@
 package ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun RsiPanel(rsiData: List<Double?>, range: IntRange) {
+    Column {
+        Row(modifier = Modifier.padding(top = 4.dp)) {
+            Text("— 70 (overbought)", style = MaterialTheme.typography.caption, color = Color(0xFFEF5350))
+            Spacer(Modifier.width(16.dp))
+            Text("— 30 (oversold)", style = MaterialTheme.typography.caption, color = Color(0xFF26A69A))
+        }
+        RsiChart(rsi = rsiData, visibleRange = range, modifier = Modifier.fillMaxWidth().height(200.dp))
+    }
+}
 
 @Composable
 fun RsiChart(

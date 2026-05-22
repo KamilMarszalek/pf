@@ -38,7 +38,9 @@ fun CandlestickChart(
     modifier: Modifier = Modifier,
     measureStartIdx: Int?,
     measureEndIdx: Int?,
-    isMeasuringDragActive: Boolean
+    isMeasuringDragActive: Boolean,
+    smaVisible: Boolean,
+    emaVisible: Boolean
 ) {
     if (candles.isEmpty()) return
 
@@ -136,8 +138,12 @@ fun CandlestickChart(
                 drawCandle(candle, getX(i), bodyWidth, getY)
             }
 
-            drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
-            drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
+            if (smaVisible) {
+                drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
+            }
+            if (emaVisible) {
+                drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
+            }
 
             if (firstPoint != null && currentTouchPos != null) {
                 drawGhostLine(firstPoint!!, currentTouchPos!!, getX, getY, visibleRange)
