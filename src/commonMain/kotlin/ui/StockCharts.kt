@@ -192,15 +192,13 @@ fun StockCharts(
                             isMeasuringMode = !isMeasuringMode
                             if (isMeasuringMode) {
                                 isDrawingMode = false
-                            } else {
-                                updateMeasureState(MeasureState())
                             }
                         }
                     ) {
                         Text(
                             text = "%",
                             style = MaterialTheme.typography.h6,
-                            color = if (isMeasuringMode || currentMeasureState.startIdx != null) Color.Magenta else Color.Black
+                            color = if (isMeasuringMode) Color.Magenta else Color.Black
                         )
                     }
 
