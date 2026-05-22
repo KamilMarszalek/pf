@@ -29,8 +29,7 @@ import data.TrendLine
 @Composable
 fun CandlestickChart(
     candles: List<Candle>,
-    sma: List<Double?> = emptyList(),
-    ema: List<Double?> = emptyList(),
+    chartState: ChartState,
     visibleRange: IntRange,
     isDrawingMode: Boolean,
     trendLines: List<TrendLine>,
@@ -53,30 +52,6 @@ fun CandlestickChart(
         if (!isDrawingMode) {
             firstPoint = null
             currentTouchPos = null
-        }
-    }
-
-    val chartState by remember(candles, sma, ema, visibleRange) {
-        derivedStateOf {
-            val visibleCandles = candles.slice(visibleRange)
-            if (visibleCandles.isEmpty()) return@derivedStateOf null
-
-            val priceMin = visibleCandles.minOf { it.low }
-            val priceMax = visibleCandles.maxOf { it.high }
-            val priceRange = (priceMax - priceMin).takeIf { it > 0.0 } ?: 1.0
-
-            val offset = visibleRange.first
-            val visibleSma = sma.drop(offset).take(visibleCandles.size)
-            val visibleEma = ema.drop(offset).take(visibleCandles.size)
-
-            ChartState(
-                visibleCandles = visibleCandles,
-                visibleSma = visibleSma,
-                visibleEma = visibleEma,
-                priceMin = priceMin,
-                priceMax = priceMax,
-                priceRange = priceRange
-            )
         }
     }
 

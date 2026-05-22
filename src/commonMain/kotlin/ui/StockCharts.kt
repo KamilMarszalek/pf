@@ -223,8 +223,7 @@ fun StockCharts(
             ) {
                 CandlestickChart(
                     candles = analysis.candles,
-                    sma = if (smaVisible) analysis.sma else emptyList(),
-                    ema = if (emaVisible) analysis.ema else emptyList(),
+                    chartState = chartState!!,
                     visibleRange = currentVisibleRange,
                     isDrawingMode = isDrawingMode,
                     trendLines = trendLines,
