@@ -102,8 +102,12 @@ fun StockCharts(
     val paddingDp = 16.dp
     val paddingPx = with(LocalDensity.current) { paddingDp.toPx() }
 
-    val chartState = remember(analysis.candles, currentVisibleRange) {
+    val chartState = remember(analysis.candles, currentVisibleRange, analysis.sma, analysis.ema) {
         val visibleCandles = analysis.candles.filterIndexed { index, _ -> index in currentVisibleRange }
+
+        val visibleSma = analysis.sma.filterIndexed { index, _ -> index in currentVisibleRange }
+        val visibleEma = analysis.ema.filterIndexed { index, _ -> index in currentVisibleRange }
+
         if (visibleCandles.isNotEmpty()) {
             val minPrice = visibleCandles.minOf { it.low }
             val maxPrice = visibleCandles.maxOf { it.high }
@@ -112,8 +116,8 @@ fun StockCharts(
                 priceMin = minPrice,
                 priceMax = maxPrice,
                 priceRange = maxPrice - minPrice,
-                visibleEma = analysis.ema,
-                visibleSma = analysis.sma
+                visibleEma = visibleEma,
+                visibleSma = visibleSma
             )
         } else null
     }
