@@ -88,7 +88,16 @@ fun StockCharts(
 
     // Measure gesture
     var isMeasuringMode by remember { mutableStateOf(false) }
-    var measureState by remember { mutableStateOf(MeasureState()) }
+    var localMeasureState by remember { mutableStateOf(MeasureState()) }
+    val isSharedMeasureState = sharedMeasureState != null
+    val currentMeasureState = if (isSharedMeasureState) sharedMeasureState!! else localMeasureState
+    val updateMeasureState: (MeasureState) -> Unit = { newState ->
+        if (isSharedMeasureState) {
+            onMeasureRangeChange(newState)
+        } else {
+            localMeasureState = newState
+        }
+    }
 
     val paddingDp = 16.dp
     val paddingPx = with(LocalDensity.current) { paddingDp.toPx() }
@@ -183,13 +192,15 @@ fun StockCharts(
                             isMeasuringMode = !isMeasuringMode
                             if (isMeasuringMode) {
                                 isDrawingMode = false
+                            } else {
+                                updateMeasureState(MeasureState())
                             }
                         }
                     ) {
                         Text(
                             text = "%",
                             style = MaterialTheme.typography.h6,
-                            color = if (isMeasuringMode) Color.Magenta else Color.Black
+                            color = if (isMeasuringMode || currentMeasureState.startIdx != null) Color.Magenta else Color.Black
                         )
                     }
 
@@ -198,7 +209,7 @@ fun StockCharts(
                     IconButton(
                         onClick = {
                             trendLines.clear()
-                            measureState = MeasureState()
+                            updateMeasureState(MeasureState())
                         }
                     ) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Clear")
@@ -241,20 +252,14 @@ fun StockCharts(
                             chartState = chartState,
                             visibleRange = currentVisibleRange,
                             paddingPx = paddingPx,
-                            onMeasureStartIdxChanged = { newIdx ->
-                                measureState = measureState.copy(startIdx = newIdx)
-                            },
-                            onMeasureEndIdxChanged = { newIdx ->
-                                measureState = measureState.copy(endIdx = newIdx)
-                            },
-                            onIsDraggingChanged = { dragging ->
-                                measureState = measureState.copy(isDragging = dragging)
+                            onMeasureStateChanged = { targetState ->
+                                updateMeasureState(targetState)
                             }
                         ),
                     modifier = Modifier.fillMaxSize(),
-                    measureStartIdx = measureState.startIdx,
-                    measureEndIdx = measureState.endIdx,
-                    isMeasuringDragActive = measureState.isDragging
+                    measureStartIdx = currentMeasureState.startIdx,
+                    measureEndIdx = currentMeasureState.endIdx,
+                    isMeasuringDragActive = currentMeasureState.isDragging
                 )
             }
 

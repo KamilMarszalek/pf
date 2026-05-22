@@ -205,50 +205,50 @@ fun Modifier.chartMeasure(
     chartState: ChartState?,
     visibleRange: IntRange,
     paddingPx: Float,
-    onMeasureStartIdxChanged: (Int?) -> Unit,
-    onMeasureEndIdxChanged: (Int?) -> Unit,
-    onIsDraggingChanged: (Boolean) -> Unit
+    onMeasureStateChanged: (MeasureState) -> Unit
 ): Modifier = composed {
     val currentRange by rememberUpdatedState(visibleRange)
     val currentChartState by rememberUpdatedState(chartState)
 
     pointerInput(isMeasuringMode, chartState) {
-        if (!isMeasuringMode || chartState == null) {
-            return@pointerInput
-        }
+        if (!isMeasuringMode || chartState == null) return@pointerInput
 
         fun getCandleIndex(pointerX: Float): Int? {
             val state = currentChartState ?: return null
             val availableW = size.width - (2 * paddingPx)
             if (availableW <= 0 || state.visibleCandles.isEmpty()) return null
-
             val step = availableW / state.visibleCandles.size
-            val localIndex = ((pointerX - paddingPx) / step)
-                .toInt().coerceIn(0, state.visibleCandles.size - 1)
-
-            return currentRange.first + localIndex
+            return currentRange.first + ((pointerX - paddingPx) / step).toInt().coerceIn(0, state.visibleCandles.size - 1)
         }
+
+        var activeStartIdx: Int? = null
+        var activeEndIdx: Int? = null
 
         detectDragGestures(
             onDragStart = { startOffset ->
-                onIsDraggingChanged(true)
-                val startIdx = getCandleIndex(startOffset.x)
-                onMeasureStartIdxChanged(startIdx)
-                onMeasureEndIdxChanged(startIdx)
+                val idx = getCandleIndex(startOffset.x)
+                if (idx != null) {
+                    activeStartIdx = idx
+                    activeEndIdx = idx
+                    onMeasureStateChanged(MeasureState(startIdx = idx, endIdx = idx, isDragging = true))
+                }
             },
             onDragEnd = {
-                onIsDraggingChanged(false)
+                if (activeStartIdx != null && activeEndIdx != null) {
+                    onMeasureStateChanged(MeasureState(startIdx = activeStartIdx, endIdx = activeEndIdx, isDragging = false))
+                }
             },
             onDragCancel = {
-                onIsDraggingChanged(false)
-                onMeasureStartIdxChanged(null)
-                onMeasureEndIdxChanged(null)
+                activeStartIdx = null
+                activeEndIdx = null
+                onMeasureStateChanged(MeasureState(startIdx = null, endIdx = null, isDragging = false))
             },
-            onDrag = { change, dragAmount ->
+            onDrag = { change, _ ->
                 change.consume()
                 val currentIdx = getCandleIndex(change.position.x)
-                if (currentIdx != null) {
-                    onMeasureEndIdxChanged(currentIdx)
+                if (activeStartIdx != null && currentIdx != null) {
+                    activeEndIdx = currentIdx
+                    onMeasureStateChanged(MeasureState(startIdx = activeStartIdx, endIdx = currentIdx, isDragging = true))
                 }
             }
         )

@@ -22,7 +22,9 @@ fun Analizer(
     stockProvider: StockProvider,
     scope: CoroutineScope,
     sharedVisibleRange: IntRange?,
-    onVisibleRangeChange: (IntRange) -> Unit
+    onVisibleRangeChange: (IntRange) -> Unit,
+    sharedMeasureState: MeasureState?,
+    onMeasureStateChange: (MeasureState) -> Unit
 ) {
     var ticker by remember { mutableStateOf("") }
     var exportMessage by remember { mutableStateOf<String?>(null) }
@@ -100,7 +102,9 @@ fun Analizer(
                     onAnalysisReady = { currentAnalysis = it },
                     modifier = Modifier.fillMaxWidth(),
                     sharedVisibleRange = sharedVisibleRange,
-                    onVisibleRangeChange = onVisibleRangeChange
+                    onVisibleRangeChange = onVisibleRangeChange,
+                    sharedMeasureState = sharedMeasureState,
+                    onMeasureRangeChange = onMeasureStateChange
                 )
             }
         }
