@@ -118,6 +118,17 @@ fun StockCharts(
         } else null
     }
 
+    val VisibleRangeButton : @Composable (VisibleRange, String) -> Unit = { visibleRange, text ->
+        IconButton(
+            onClick = { updateVisibleRange(getVisibleRange(visibleRange, visibleRangeMarks.value)) },
+        ) {
+            Text(
+                text = text,
+                color = if (visibleRangeEnum == visibleRange) Color.Magenta else Color.Black
+            )
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -133,46 +144,11 @@ fun StockCharts(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row {
-                    IconButton(
-                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.FIVE_YEAR, visibleRangeMarks.value)) },
-                    ) {
-                        Text(
-                            text = "5Y",
-                            color = if (visibleRangeEnum == VisibleRange.FIVE_YEAR) Color.Magenta else Color.Black
-                        )
-                    }
-                    IconButton(
-                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.ONE_YEAR, visibleRangeMarks.value)) },
-                    ) {
-                        Text(
-                            text = "1Y",
-                            color = if (visibleRangeEnum == VisibleRange.ONE_YEAR) Color.Magenta else Color.Black
-                        )
-                    }
-                    IconButton(
-                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.SIX_MONTHS, visibleRangeMarks.value)) },
-                    ) {
-                        Text(
-                            text = "6M",
-                            color = if (visibleRangeEnum == VisibleRange.SIX_MONTHS) Color.Magenta else Color.Black
-                        )
-                    }
-                    IconButton(
-                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.THREE_MONTHS, visibleRangeMarks.value)) },
-                    ) {
-                        Text(
-                            text = "3M",
-                            color = if (visibleRangeEnum == VisibleRange.THREE_MONTHS) Color.Magenta else Color.Black
-                        )
-                    }
-                    IconButton(
-                        onClick = { updateVisibleRange(getVisibleRange(VisibleRange.ONE_MONTH, visibleRangeMarks.value)) },
-                    ) {
-                        Text(
-                            text = "1M",
-                            color = if (visibleRangeEnum == VisibleRange.ONE_MONTH) Color.Magenta else Color.Black
-                        )
-                    }
+                    VisibleRangeButton(VisibleRange.FIVE_YEAR, "5Y")
+                    VisibleRangeButton(VisibleRange.ONE_YEAR, "1Y")
+                    VisibleRangeButton(VisibleRange.SIX_MONTHS, "6M")
+                    VisibleRangeButton(VisibleRange.THREE_MONTHS, "3M")
+                    VisibleRangeButton(VisibleRange.ONE_MONTH, "1M")
                 }
                 Row {
                     IconButton(
