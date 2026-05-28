@@ -226,6 +226,8 @@ fun StockCharts(
             if (rsiVisible) {
                 RsiPanel(rsiData = analysis.rsi, range = currentVisibleRange)
             }
+
+            StockSummary(analysis = analysis)
         }
     }
 }
