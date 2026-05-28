@@ -23,12 +23,19 @@ fun calculateChartState(
 
     val minPrice = visibleCandles.minOf { it.low }
     val maxPrice = visibleCandles.maxOf { it.high }
+    val priceRange = maxPrice - minPrice
+    val safePriceRange = if (priceRange == 0.0) {
+        1.0
+    } else {
+        priceRange
+    }
+    val pricePadding = if (priceRange == 0.0) safePriceRange / 2.0 else 0.0
 
     return ChartState(
         visibleCandles = visibleCandles,
-        priceMin = minPrice,
-        priceMax = maxPrice,
-        priceRange = maxPrice - minPrice,
+        priceMin = minPrice - pricePadding,
+        priceMax = maxPrice + pricePadding,
+        priceRange = safePriceRange,
         visibleEma = visibleEma,
         visibleSma = visibleSma
     )
