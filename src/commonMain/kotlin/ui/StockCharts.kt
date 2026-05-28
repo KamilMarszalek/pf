@@ -1,12 +1,15 @@
 package ui
 
 import analysis.StockAnalysis
+import analysis.CandleTimeframe
+import analysis.aggregateCandles
 import analysis.analyzeCandles
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -35,7 +38,11 @@ fun StockCharts(
     sharedMeasureState: MeasureState? = null,
     onMeasureRangeChange: (MeasureState) -> Unit = {}
 ) {
-    val totalCount = candles.size
+    var candleTimeframe by remember { mutableStateOf(CandleTimeframe.DAILY) }
+    val displayCandles by remember(candles, candleTimeframe) {
+        derivedStateOf { aggregateCandles(candles, candleTimeframe) }
+    }
+    val totalCount = displayCandles.size
     if (totalCount == 0) return
 
     // State definitions
@@ -52,8 +59,8 @@ fun StockCharts(
     val trendLines = remember { mutableStateListOf<TrendLine>() }
 
     // Pure business logic triggers
-    val analysis by remember(candles, smaPeriod, emaPeriod, rsiPeriod) {
-        derivedStateOf { analyzeCandles(candles, smaPeriod, emaPeriod, rsiPeriod) }
+    val analysis by remember(displayCandles, smaPeriod, emaPeriod, rsiPeriod) {
+        derivedStateOf { analyzeCandles(displayCandles, smaPeriod, emaPeriod, rsiPeriod) }
     }
 
     LaunchedEffect(analysis) { onAnalysisReady(analysis) }
@@ -72,18 +79,18 @@ fun StockCharts(
             localVisibleRange = newRange
     }
 
-    val visibleRangeMarks = remember { mutableStateOf(findVisibleRangeMarks(analysis.candles)) }
+    val visibleRangeMarks = remember(analysis.candles) { findVisibleRangeMarks(analysis.candles) }
     var visibleRangeEnum by remember {
         mutableStateOf(
             detectVisibleRange(
                 currentVisibleRange,
-                visibleRangeMarks.value
+                visibleRangeMarks
             )
         )
     }
 
-    LaunchedEffect(currentVisibleRange) {
-        visibleRangeEnum = detectVisibleRange(currentVisibleRange, visibleRangeMarks.value)
+    LaunchedEffect(currentVisibleRange, visibleRangeMarks) {
+        visibleRangeEnum = detectVisibleRange(currentVisibleRange, visibleRangeMarks)
     }
 
     if (sharedVisibleRange == IntRange.EMPTY) {
@@ -112,7 +119,7 @@ fun StockCharts(
     val visibleRangeButton: @Composable (VisibleRange, String) -> Unit = { range, text ->
         IconButton(
             onClick = {
-                updateVisibleRange(getVisibleRange(range, visibleRangeMarks.value))
+                updateVisibleRange(getVisibleRange(range, visibleRangeMarks))
             }) {
             Text(
                 text = text,
@@ -139,6 +146,16 @@ fun StockCharts(
                     visibleRangeButton(VisibleRange.SIX_MONTHS, "6M")
                     visibleRangeButton(VisibleRange.THREE_MONTHS, "3M")
                     visibleRangeButton(VisibleRange.ONE_MONTH, "1M")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CandleTimeframe.entries.forEach { timeframe ->
+                        TextButton(onClick = { candleTimeframe = timeframe }) {
+                            Text(
+                                text = timeframe.label,
+                                color = if (candleTimeframe == timeframe) Color.Magenta else Color.Black
+                            )
+                        }
+                    }
                 }
                 Row {
                     IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
