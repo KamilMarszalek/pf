@@ -2,9 +2,11 @@ package ui
 
 import analysis.StockAnalysis
 import analysis.analyzeCandles
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -16,10 +18,12 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import data.Candle
-import data.ChartState
 import data.TrendLine
 import data.calculateChartState
-import ui.ActiveRangeUtils.*
+import ui.ActiveRangeUtils.VisibleRange
+import ui.ActiveRangeUtils.detectVisibleRange
+import ui.ActiveRangeUtils.findVisibleRangeMarks
+import ui.ActiveRangeUtils.getVisibleRange
 
 @Composable
 fun StockCharts(
@@ -59,7 +63,7 @@ fun StockCharts(
         mutableStateOf(initialVisibleRange(totalCount, preferredCount = 100))
     }
     val isSharedMode = sharedVisibleRange != null && sharedVisibleRange != IntRange.EMPTY
-    val currentVisibleRange = if (isSharedMode) sharedVisibleRange!! else localVisibleRange
+    val currentVisibleRange = if (isSharedMode) sharedVisibleRange else localVisibleRange
 
     val updateVisibleRange: (IntRange) -> Unit = { newRange ->
         if (isSharedMode)
@@ -69,7 +73,14 @@ fun StockCharts(
     }
 
     val visibleRangeMarks = remember { mutableStateOf(findVisibleRangeMarks(analysis.candles)) }
-    var visibleRangeEnum by remember { mutableStateOf(detectVisibleRange(currentVisibleRange, visibleRangeMarks.value)) }
+    var visibleRangeEnum by remember {
+        mutableStateOf(
+            detectVisibleRange(
+                currentVisibleRange,
+                visibleRangeMarks.value
+            )
+        )
+    }
 
     LaunchedEffect(currentVisibleRange) {
         visibleRangeEnum = detectVisibleRange(currentVisibleRange, visibleRangeMarks.value)
@@ -82,7 +93,7 @@ fun StockCharts(
     // Measure State Management
     var localMeasureState by remember { mutableStateOf(MeasureState()) }
     val isSharedMeasureState = sharedMeasureState != null
-    val currentMeasureState = if (isSharedMeasureState) sharedMeasureState!! else localMeasureState
+    val currentMeasureState = if (isSharedMeasureState) sharedMeasureState else localMeasureState
     val updateMeasureState: (MeasureState) -> Unit = { newState ->
         if (isSharedMeasureState)
             onMeasureRangeChange(newState)
@@ -142,7 +153,8 @@ fun StockCharts(
                         if (isMeasuringMode)
                             isDrawingMode = false
                     }) {
-                        Text("%",
+                        Text(
+                            "%",
                             style = MaterialTheme.typography.h6,
                             color = if (isMeasuringMode) Color.Magenta else Color.Black
                         )
@@ -173,10 +185,11 @@ fun StockCharts(
                         interactiveModifier = Modifier
                             .chartDrag(
                                 chartWidthPx = chartWidthPx,
-                                visibleRange =  currentVisibleRange,
+                                visibleRange = currentVisibleRange,
                                 totalCount = totalCount,
                                 onRangeChange = updateVisibleRange,
-                                isDrawingMode = isDrawingMode || isMeasuringMode)
+                                isDrawingMode = isDrawingMode || isMeasuringMode
+                            )
                             .chartZoom(
                                 visibleRange = currentVisibleRange,
                                 totalCount = totalCount,
@@ -206,13 +219,16 @@ fun StockCharts(
                     smaPeriod, { smaPeriod = it },
                     smaVisible, { smaVisible = it },
                     5f..200f,
-                    Color(0xFFFFA726))
+                    Color(0xFFFFA726)
+                )
                 Spacer(Modifier.width(16.dp))
-                IndicatorControlRow("EMA",
+                IndicatorControlRow(
+                    "EMA",
                     emaPeriod, { emaPeriod = it },
                     emaVisible, { emaVisible = it },
                     5f..200f,
-                    Color(0xFF42A5F5))
+                    Color(0xFF42A5F5)
+                )
             }
 
             IndicatorControlRow(
