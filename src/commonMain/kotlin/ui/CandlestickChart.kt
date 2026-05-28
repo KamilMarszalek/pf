@@ -75,8 +75,6 @@ fun CandlestickChart(
                 .fillMaxSize()
                 .then(if (isDrawingMode) drawingModifier else interactiveModifier)
         ) {
-            val state = chartState
-
             val width = size.width
             val height = size.height
 
@@ -84,14 +82,14 @@ fun CandlestickChart(
             val availableChartHeight = height - (2 * paddingPx)
 
             val getX = { index: Int ->
-                paddingPx + index * (availableChartWidth / state.visibleCandles.size) + (availableChartWidth / state.visibleCandles.size / 2)
+                paddingPx + index * (availableChartWidth / chartState.visibleCandles.size) + (availableChartWidth / chartState.visibleCandles.size / 2)
             }
             val getY = { price: Double ->
-                (paddingPx + availableChartHeight * (1.0 - (price - state.priceMin) / state.priceRange)).toFloat()
+                (paddingPx + availableChartHeight * (1.0 - (price - chartState.priceMin) / chartState.priceRange)).toFloat()
             }
 
-            drawYAxisLabels(state.priceMin, state.priceMax, getY, paddingPx, width, textMeasurer)
-            drawXAxisLabels(state.visibleCandles, getX, paddingPx, height, textMeasurer)
+            drawYAxisLabels(chartState.priceMin, chartState.priceMax, getY, paddingPx, width, textMeasurer)
+            drawXAxisLabels(chartState.visibleCandles, getX, paddingPx, height, textMeasurer)
 
             if (measureStartIdx != null && measureEndIdx != null) {
                 val leftIdx = minOf(measureStartIdx, measureEndIdx)
@@ -132,17 +130,17 @@ fun CandlestickChart(
                 }
             }
 
-            val candleWidth = availableChartWidth / state.visibleCandles.size
+            val candleWidth = availableChartWidth / chartState.visibleCandles.size
             val bodyWidth = candleWidth * 0.6f
-            state.visibleCandles.forEachIndexed { i, candle ->
+            chartState.visibleCandles.forEachIndexed { i, candle ->
                 drawCandle(candle, getX(i), bodyWidth, getY)
             }
 
             if (smaVisible) {
-                drawIndicatorLine(state.visibleSma, Color(0xFFFFA726), getX, getY)
+                drawIndicatorLine(chartState.visibleSma, Color(0xFFFFA726), getX, getY)
             }
             if (emaVisible) {
-                drawIndicatorLine(state.visibleEma, Color(0xFF42A5F5), getX, getY)
+                drawIndicatorLine(chartState.visibleEma, Color(0xFF42A5F5), getX, getY)
             }
 
             if (firstPoint != null && currentTouchPos != null) {
