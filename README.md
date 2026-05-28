@@ -10,16 +10,19 @@ depend on the external API.
 - Ticker input and historical OHLCV candle download from the Financial Modeling Prep API.
 - Candlestick chart drawn in the application.
 - SMA, EMA, and RSI indicators calculated locally by the application.
+- Basic statistics summary: latest close, total return, min/max close, average close, average volume, and simple volatility.
 - Configurable SMA, EMA, and RSI calculation periods using UI sliders.
 - Visibility toggles for SMA, EMA, and RSI.
-- RSI panel with 30 and 70 reference levels for interpretation.
+- Latest SMA, EMA, and RSI values displayed below the chart.
+- RSI panel and summary interpretation with 30 and 70 reference levels.
 - Chart panning and mouse-wheel zooming.
 - Predefined visible ranges: 1M, 3M, 6M, 1Y, and 5Y/full range.
-- Comparison mode with two analyzer panels and synchronized visible range/measurement state.
+- Daily, weekly, and monthly candle views. Weekly and monthly candles are aggregated locally from downloaded daily data.
+- Side-by-side comparison mode with two analyzer panels and synchronized visible range/measurement state. It is not a normalized benchmark comparison chart.
 - Simple chart annotation by drawing trend lines.
 - Percentage measurement tool for comparing price movement between two candles.
 - CSV export of candles and calculated indicator values.
-- Unit tests for SMA, EMA, RSI, and CSV export.
+- Unit tests for SMA, EMA, RSI, CSV export, statistics, candle aggregation, and chart state edge cases.
 
 ## Functional Programming Approach
 
@@ -27,10 +30,11 @@ The project applies functional programming principles where they fit the desktop
 
 - Technical indicators are implemented as pure functions in `src/commonMain/kotlin/indicators`.
 - `analyzeCandles` transforms candle data into an immutable `StockAnalysis` value.
+- Basic statistics and candle timeframe aggregation are implemented as pure functions in `src/commonMain/kotlin/analysis`.
 - Data models such as `Candle`, `ChartState`, `TrendLine`, and `StockAnalysis` are immutable Kotlin data classes.
 - API responses are represented with the sealed `ApiResult` type instead of throwing errors into the UI layer.
 - CSV export is implemented as a pure transformation from `StockAnalysis` to `String`.
-- UI state is held at Compose boundaries and recomputed with derived state where possible.
+- UI state is held at Compose boundaries and recomputed with derived state where practical. Compose-specific mutable state is kept in the UI layer.
 - Platform-specific mutable operations, such as saving a file through AWT, are hidden behind the `expect`/`actual`
   `saveTextFile` wrapper.
 
@@ -123,9 +127,10 @@ Then:
 
 1. Enter a ticker symbol supported by Financial Modeling Prep.
 2. Click `Analyze`.
-3. Use the chart controls to change visible range, pan, zoom, toggle indicators, draw trend lines, or measure percentage
+3. Use the Daily, Weekly, and Monthly buttons to change the candle timeframe.
+4. Use the chart controls to change visible range, pan, zoom, toggle indicators, draw trend lines, or measure percentage
    movement.
-4. Enable `Comparing mode` to display two analyzer panels side by side.
+5. Enable `Comparing mode` to display two analyzer panels side by side.
 
 ## CSV Export
 
@@ -145,6 +150,7 @@ writes a CSV file containing:
 
 - The application depends on the Financial Modeling Prep API and its symbol format, rate limits, and available data.
 - Missing or invalid API keys are handled as API errors at runtime.
+- Comparison mode is side-by-side only; it does not normalize prices or calculate benchmark-relative performance.
 - Trend lines and measurements exist only in memory and are lost after clearing or reloading.
 - Some UI text/rendering is minimal and oriented toward project functionality rather than a polished product release.
 - There is no offline cache.
@@ -154,9 +160,8 @@ writes a CSV file containing:
 
 - Add normalized comparison against another stock or market index.
 - Add more indicators, such as MACD, Bollinger Bands, ATR, and volume-based indicators.
-- Add summary statistics such as return, volatility, drawdown, and moving average crossovers.
+- Add additional statistics such as drawdown and moving average crossovers.
 - Persist user preferences and chart annotations.
 - Add data caching and better handling of API limits.
 - Add packaging tasks for distributable desktop builds.
 - Improve UI layout, accessibility, and chart tooltips.
-
