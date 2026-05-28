@@ -75,7 +75,7 @@ fun CandlestickChart(
                 .fillMaxSize()
                 .then(if (isDrawingMode) drawingModifier else interactiveModifier)
         ) {
-            val state = chartState ?: return@Canvas
+            val state = chartState
 
             val width = size.width
             val height = size.height
