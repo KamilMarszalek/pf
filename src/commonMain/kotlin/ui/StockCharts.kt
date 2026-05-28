@@ -109,7 +109,7 @@ fun StockCharts(
     }
 
     // Sub-composable lambda
-    val VisibleRangeButton: @Composable (VisibleRange, String) -> Unit = { range, text ->
+    val visibleRangeButton: @Composable (VisibleRange, String) -> Unit = { range, text ->
         IconButton(
             onClick = {
                 updateVisibleRange(getVisibleRange(range, visibleRangeMarks.value))
@@ -134,11 +134,11 @@ fun StockCharts(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row {
-                    VisibleRangeButton(VisibleRange.FIVE_YEAR, "5Y")
-                    VisibleRangeButton(VisibleRange.ONE_YEAR, "1Y")
-                    VisibleRangeButton(VisibleRange.SIX_MONTHS, "6M")
-                    VisibleRangeButton(VisibleRange.THREE_MONTHS, "3M")
-                    VisibleRangeButton(VisibleRange.ONE_MONTH, "1M")
+                    visibleRangeButton(VisibleRange.FIVE_YEAR, "5Y")
+                    visibleRangeButton(VisibleRange.ONE_YEAR, "1Y")
+                    visibleRangeButton(VisibleRange.SIX_MONTHS, "6M")
+                    visibleRangeButton(VisibleRange.THREE_MONTHS, "3M")
+                    visibleRangeButton(VisibleRange.ONE_MONTH, "1M")
                 }
                 Row {
                     IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
