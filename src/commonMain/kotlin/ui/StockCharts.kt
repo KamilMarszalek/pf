@@ -17,7 +17,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import data.Candle
-import data.TrendLine
 import data.calculateChartState
 import ui.activeRangeUtils.VisibleRange
 import ui.activeRangeUtils.detectVisibleRange
@@ -34,29 +33,27 @@ fun StockCharts(
     sharedMeasureState: MeasureState? = null,
     onMeasureRangeChange: (MeasureState) -> Unit = {}
 ) {
-    var candleTimeframe by remember { mutableStateOf(CandleTimeframe.DAILY) }
-    val displayCandles by remember(candles, candleTimeframe) {
-        derivedStateOf { aggregateCandles(candles, candleTimeframe) }
+    val (uiState, dispatch) = rememberReducer(
+        initialState = StockChartUiState(),
+        reducer = ::reduceStockChartState
+    )
+
+    val displayCandles by remember(candles, uiState.candleTimeframe) {
+        derivedStateOf { aggregateCandles(candles, uiState.candleTimeframe) }
     }
     val totalCount = displayCandles.size
     if (totalCount == 0) return
 
-    // State definitions
-    var smaPeriod by remember { mutableStateOf(20) }
-    var emaPeriod by remember { mutableStateOf(20) }
-    var rsiPeriod by remember { mutableStateOf(14) }
-    var smaVisible by remember { mutableStateOf(true) }
-    var emaVisible by remember { mutableStateOf(true) }
-    var rsiVisible by remember { mutableStateOf(true) }
-    var chartWidthPx by remember { mutableStateOf(0f) }
-    var isDrawingMode by remember { mutableStateOf(false) }
-    var isMeasuringMode by remember { mutableStateOf(false) }
-
-    val trendLines = remember { mutableStateListOf<TrendLine>() }
-
     // Pure business logic triggers
-    val analysis by remember(displayCandles, smaPeriod, emaPeriod, rsiPeriod) {
-        derivedStateOf { analyzeCandles(displayCandles, smaPeriod, emaPeriod, rsiPeriod) }
+    val analysis by remember(displayCandles, uiState.smaPeriod, uiState.emaPeriod, uiState.rsiPeriod) {
+        derivedStateOf {
+            analyzeCandles(
+                candles = displayCandles,
+                smaPeriod = uiState.smaPeriod,
+                emaPeriod = uiState.emaPeriod,
+                rsiPeriod = uiState.rsiPeriod,
+            )
+        }
     }
 
     LaunchedEffect(analysis) { onAnalysisReady(analysis) }
@@ -128,7 +125,7 @@ fun StockCharts(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .onSizeChanged { chartWidthPx = it.width.toFloat() }
+                .onSizeChanged { dispatch(StockChartAction.SetChartWidth(it.width.toFloat())) }
         ) {
             // Toolbar Row
             Row(
@@ -145,36 +142,34 @@ fun StockCharts(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CandleTimeframe.entries.forEach { timeframe ->
-                        TextButton(onClick = { candleTimeframe = timeframe }) {
+                        TextButton(onClick = { dispatch(StockChartAction.SetCandleTimeframe(timeframe)) }) {
                             Text(
                                 text = timeframe.label,
-                                color = if (candleTimeframe == timeframe) Color.Magenta else Color.Black
+                                color = if (uiState.candleTimeframe == timeframe) Color.Magenta else Color.Black
                             )
                         }
                     }
                 }
                 Row {
-                    IconButton(onClick = { isDrawingMode = !isDrawingMode }) {
+                    IconButton(onClick = { dispatch(StockChartAction.ToggleDrawingMode) }) {
                         Icon(
                             Icons.Default.Edit, "Edit",
-                            tint = if (isDrawingMode) Color.Magenta else Color.Black
+                            tint = if (uiState.isDrawingMode) Color.Magenta else Color.Black
                         )
                     }
                     Spacer(Modifier.width(8.dp))
                     IconButton(onClick = {
-                        isMeasuringMode = !isMeasuringMode
-                        if (isMeasuringMode)
-                            isDrawingMode = false
+                        dispatch(StockChartAction.ToggleMeasuringMode)
                     }) {
                         Text(
                             "%",
                             style = MaterialTheme.typography.h6,
-                            color = if (isMeasuringMode) Color.Magenta else Color.Black
+                            color = if (uiState.isMeasuringMode) Color.Magenta else Color.Black
                         )
                     }
                     Spacer(Modifier.width(8.dp))
                     IconButton(onClick = {
-                        trendLines.clear()
+                        dispatch(StockChartAction.ClearTrendLines)
                         updateMeasureState(MeasureState())
                     }) {
                         Icon(
@@ -192,16 +187,16 @@ fun StockCharts(
                         candles = analysis.candles,
                         chartState = activeState,
                         visibleRange = currentVisibleRange,
-                        isDrawingMode = isDrawingMode,
-                        trendLines = trendLines,
-                        onLineAdded = { newLine -> trendLines.add(newLine); isDrawingMode = false },
+                        isDrawingMode = uiState.isDrawingMode,
+                        trendLines = uiState.trendLines,
+                        onLineAdded = { newLine -> dispatch(StockChartAction.AddTrendLine(newLine)) },
                         interactiveModifier = Modifier
                             .chartDrag(
-                                chartWidthPx = chartWidthPx,
+                                chartWidthPx = uiState.chartWidthPx,
                                 visibleRange = currentVisibleRange,
                                 totalCount = totalCount,
                                 onRangeChange = updateVisibleRange,
-                                isDrawingMode = isDrawingMode || isMeasuringMode
+                                isDrawingMode = uiState.isDrawingMode || uiState.isMeasuringMode
                             )
                             .chartZoom(
                                 visibleRange = currentVisibleRange,
@@ -209,7 +204,7 @@ fun StockCharts(
                                 onRangeChange = updateVisibleRange
                             )
                             .chartMeasure(
-                                isMeasuringMode = isMeasuringMode,
+                                isMeasuringMode = uiState.isMeasuringMode,
                                 chartState = activeState,
                                 visibleRange = currentVisibleRange,
                                 paddingPx = paddingPx,
@@ -219,8 +214,8 @@ fun StockCharts(
                         measureStartIdx = currentMeasureState.startIdx,
                         measureEndIdx = currentMeasureState.endIdx,
                         isMeasuringDragActive = currentMeasureState.isDragging,
-                        smaVisible = smaVisible,
-                        emaVisible = emaVisible
+                        smaVisible = uiState.smaVisible,
+                        emaVisible = uiState.emaVisible
                     )
                 }
             }
@@ -229,16 +224,16 @@ fun StockCharts(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IndicatorControlRow(
                     "SMA",
-                    smaPeriod, { smaPeriod = it },
-                    smaVisible, { smaVisible = it },
+                    uiState.smaPeriod, { dispatch(StockChartAction.SetSmaPeriod(it)) },
+                    uiState.smaVisible, { dispatch(StockChartAction.SetSmaVisible(it)) },
                     5f..200f,
                     Color(0xFFFFA726)
                 )
                 Spacer(Modifier.width(16.dp))
                 IndicatorControlRow(
                     "EMA",
-                    emaPeriod, { emaPeriod = it },
-                    emaVisible, { emaVisible = it },
+                    uiState.emaPeriod, { dispatch(StockChartAction.SetEmaPeriod(it)) },
+                    uiState.emaVisible, { dispatch(StockChartAction.SetEmaVisible(it)) },
                     5f..200f,
                     Color(0xFF42A5F5)
                 )
@@ -246,13 +241,13 @@ fun StockCharts(
 
             IndicatorControlRow(
                 "RSI",
-                rsiPeriod, { rsiPeriod = it },
-                rsiVisible, { rsiVisible = it },
+                uiState.rsiPeriod, { dispatch(StockChartAction.SetRsiPeriod(it)) },
+                uiState.rsiVisible, { dispatch(StockChartAction.SetRsiVisible(it)) },
                 2f..50f
             )
 
             // Bottom RSI panel
-            if (rsiVisible) {
+            if (uiState.rsiVisible) {
                 RsiPanel(rsiData = analysis.rsi, range = currentVisibleRange)
             }
 
