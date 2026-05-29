@@ -3,6 +3,12 @@ package ui
 import analysis.CandleTimeframe
 import data.TrendLine
 
+enum class ChartTool {
+    PAN,
+    DRAW_TREND_LINE,
+    MEASURE,
+}
+
 data class StockChartUiState(
     val candleTimeframe: CandleTimeframe = CandleTimeframe.DAILY,
     val smaPeriod: Int = 20,
@@ -12,8 +18,7 @@ data class StockChartUiState(
     val emaVisible: Boolean = true,
     val rsiVisible: Boolean = true,
     val chartWidthPx: Float = 0f,
-    val isDrawingMode: Boolean = false,
-    val isMeasuringMode: Boolean = false,
+    val activeTool: ChartTool = ChartTool.PAN,
     val trendLines: List<TrendLine> = emptyList(),
 )
 
@@ -27,8 +32,8 @@ sealed interface StockChartAction {
     data class SetRsiVisible(val visible: Boolean) : StockChartAction
     data class SetChartWidth(val widthPx: Float) : StockChartAction
     data class AddTrendLine(val line: TrendLine) : StockChartAction
-    data object ToggleDrawingMode : StockChartAction
-    data object ToggleMeasuringMode : StockChartAction
+    data object ToggleDrawingTool : StockChartAction
+    data object ToggleMeasureTool : StockChartAction
     data object ClearTrendLines : StockChartAction
 }
 
@@ -47,24 +52,26 @@ fun reduceStockChartState(
         is StockChartAction.SetChartWidth -> state.copy(chartWidthPx = action.widthPx)
         is StockChartAction.AddTrendLine -> state.copy(
             trendLines = state.trendLines + action.line,
-            isDrawingMode = false,
+            activeTool = ChartTool.PAN,
         )
 
-        StockChartAction.ToggleDrawingMode -> {
-            val drawingMode = !state.isDrawingMode
+        StockChartAction.ToggleDrawingTool ->
             state.copy(
-                isDrawingMode = drawingMode,
-                isMeasuringMode = if (drawingMode) false else state.isMeasuringMode,
+                activeTool = if (state.activeTool == ChartTool.DRAW_TREND_LINE) {
+                    ChartTool.PAN
+                } else {
+                    ChartTool.DRAW_TREND_LINE
+                }
             )
-        }
 
-        StockChartAction.ToggleMeasuringMode -> {
-            val measuringMode = !state.isMeasuringMode
+        StockChartAction.ToggleMeasureTool ->
             state.copy(
-                isMeasuringMode = measuringMode,
-                isDrawingMode = if (measuringMode) false else state.isDrawingMode,
+                activeTool = if (state.activeTool == ChartTool.MEASURE) {
+                    ChartTool.PAN
+                } else {
+                    ChartTool.MEASURE
+                }
             )
-        }
 
         StockChartAction.ClearTrendLines -> state.copy(trendLines = emptyList())
     }

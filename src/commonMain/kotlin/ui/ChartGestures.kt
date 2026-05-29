@@ -15,9 +15,14 @@ import androidx.compose.ui.unit.IntSize
 import data.ChartState
 import data.TrendLine
 
+private const val ChartDragPointerInputKey = "chartDrag"
+private const val ChartZoomPointerInputKey = "chartZoom"
+private const val DrawTrendLinePointerInputKey = "drawTrendLine"
+private const val ChartMeasurePointerInputKey = "chartMeasure"
+
 @Composable
 fun Modifier.chartDrag(
-    isDrawingMode: Boolean,
+    isPanDisabled: Boolean,
     chartWidthPx: Float,
     visibleRange: IntRange,
     totalCount: Int,
@@ -26,8 +31,8 @@ fun Modifier.chartDrag(
     val visibleRangeState = rememberUpdatedState(visibleRange)
     val onRangeChangeState = rememberUpdatedState(onRangeChange)
 
-    return pointerInput(chartWidthPx, totalCount) {
-        if (isDrawingMode) return@pointerInput
+    return pointerInput(ChartDragPointerInputKey, chartWidthPx, totalCount) {
+        if (isPanDisabled) return@pointerInput
 
         var dragAccumulator = 0f
 
@@ -82,7 +87,7 @@ fun Modifier.chartZoom(
     val visibleRangeState = rememberUpdatedState(visibleRange)
     val onRangeChangeState = rememberUpdatedState(onRangeChange)
 
-    return pointerInput(totalCount) {
+    return pointerInput(ChartZoomPointerInputKey, totalCount) {
         awaitPointerEventScope {
             while (true) {
                 val event = awaitPointerEvent()
@@ -125,15 +130,16 @@ fun Modifier.drawTrendLine(
     onDrawingLineStateChanged: (DrawingLineState) -> Unit,
     onLineAdded: (TrendLine) -> Unit
 ): Modifier = composed {
-    val currentDrawingLineState by rememberUpdatedState(drawingLineState)
     val currentRange by rememberUpdatedState(visibleRange)
     val currentChartState by rememberUpdatedState(chartState)
 
-    pointerInput(isDrawingMode, chartState) {
+    pointerInput(DrawTrendLinePointerInputKey, isDrawingMode, chartState) {
         if (!isDrawingMode || chartState == null) {
             onDrawingLineStateChanged(DrawingLineState())
             return@pointerInput
         }
+
+        var activeStartPoint: DrawingPoint? = null
 
         awaitPointerEventScope {
             while (true) {
@@ -152,6 +158,7 @@ fun Modifier.drawTrendLine(
                             currentRange
                         )
 
+                        activeStartPoint = point
                         onDrawingLineStateChanged(
                             DrawingLineState(
                                 firstPoint = point,
@@ -162,9 +169,13 @@ fun Modifier.drawTrendLine(
                     }
 
                     change.pressed -> {
-                        if (currentDrawingLineState.firstPoint != null) {
+                        val startPoint = activeStartPoint
+                        if (startPoint != null) {
                             onDrawingLineStateChanged(
-                                currentDrawingLineState.copy(currentTouchPos = position)
+                                DrawingLineState(
+                                    firstPoint = startPoint,
+                                    currentTouchPos = position
+                                )
                             )
                             change.consume()
                         }
@@ -172,7 +183,7 @@ fun Modifier.drawTrendLine(
 
                     change.changedToUp() -> {
                         val state = currentChartState
-                        val startPoint = currentDrawingLineState.firstPoint
+                        val startPoint = activeStartPoint
 
                         if (state != null && startPoint != null) {
                             val point = pointerPositionToChartPoint(
@@ -192,6 +203,7 @@ fun Modifier.drawTrendLine(
                                 )
                             )
                         }
+                        activeStartPoint = null
                         onDrawingLineStateChanged(DrawingLineState())
                         change.consume()
                     }
@@ -211,7 +223,7 @@ fun Modifier.chartMeasure(
     val currentRange by rememberUpdatedState(visibleRange)
     val currentChartState by rememberUpdatedState(chartState)
 
-    pointerInput(isMeasuringMode, chartState) {
+    pointerInput(ChartMeasurePointerInputKey, isMeasuringMode, chartState) {
         if (!isMeasuringMode || chartState == null) return@pointerInput
 
         fun getCandleIndex(pointerX: Float): Int? {

@@ -5,9 +5,13 @@ import data.TrendLine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class StockChartUiStateTest {
+
+    @Test
+    fun `default active tool should be pan`() {
+        assertEquals(ChartTool.PAN, StockChartUiState().activeTool)
+    }
 
     @Test
     fun `should update indicator periods and timeframe with copy based state`() {
@@ -36,32 +40,49 @@ class StockChartUiStateTest {
     }
 
     @Test
-    fun `should disable drawing mode when measuring mode is enabled`() {
-        val drawingState = reduceStockChartState(
-            StockChartUiState(),
-            StockChartAction.ToggleDrawingMode,
-        )
+    fun `toggle drawing tool should switch between pan and drawing`() {
+        val drawingState = reduceStockChartState(StockChartUiState(), StockChartAction.ToggleDrawingTool)
+        val panState = reduceStockChartState(drawingState, StockChartAction.ToggleDrawingTool)
 
-        val measuringState = reduceStockChartState(
-            drawingState,
-            StockChartAction.ToggleMeasuringMode,
-        )
+        assertEquals(ChartTool.DRAW_TREND_LINE, drawingState.activeTool)
+        assertEquals(ChartTool.PAN, panState.activeTool)
+    }
 
-        assertTrue(drawingState.isDrawingMode)
-        assertTrue(measuringState.isMeasuringMode)
-        assertFalse(measuringState.isDrawingMode)
+    @Test
+    fun `toggle measure tool should switch between pan and measure`() {
+        val measureState = reduceStockChartState(StockChartUiState(), StockChartAction.ToggleMeasureTool)
+        val panState = reduceStockChartState(measureState, StockChartAction.ToggleMeasureTool)
+
+        assertEquals(ChartTool.MEASURE, measureState.activeTool)
+        assertEquals(ChartTool.PAN, panState.activeTool)
+    }
+
+    @Test
+    fun `toggle drawing tool should switch from measure to drawing`() {
+        val measureState = StockChartUiState(activeTool = ChartTool.MEASURE)
+        val drawingState = reduceStockChartState(measureState, StockChartAction.ToggleDrawingTool)
+
+        assertEquals(ChartTool.DRAW_TREND_LINE, drawingState.activeTool)
+    }
+
+    @Test
+    fun `toggle measure tool should switch from drawing to measure`() {
+        val drawingState = StockChartUiState(activeTool = ChartTool.DRAW_TREND_LINE)
+        val measureState = reduceStockChartState(drawingState, StockChartAction.ToggleMeasureTool)
+
+        assertEquals(ChartTool.MEASURE, measureState.activeTool)
     }
 
     @Test
     fun `should append trend line immutably and leave old state unchanged`() {
-        val oldState = StockChartUiState(isDrawingMode = true)
+        val oldState = StockChartUiState(activeTool = ChartTool.DRAW_TREND_LINE)
         val line = trendLine()
 
         val newState = reduceStockChartState(oldState, StockChartAction.AddTrendLine(line))
 
         assertEquals(emptyList(), oldState.trendLines)
         assertEquals(listOf(line), newState.trendLines)
-        assertFalse(newState.isDrawingMode)
+        assertEquals(ChartTool.PAN, newState.activeTool)
     }
 
     @Test
@@ -70,14 +91,14 @@ class StockChartUiStateTest {
         val oldState = StockChartUiState(
             candleTimeframe = CandleTimeframe.MONTHLY,
             trendLines = listOf(line),
-            isMeasuringMode = true,
+            activeTool = ChartTool.MEASURE,
         )
 
         val newState = reduceStockChartState(oldState, StockChartAction.ClearTrendLines)
 
         assertEquals(emptyList(), newState.trendLines)
         assertEquals(CandleTimeframe.MONTHLY, newState.candleTimeframe)
-        assertTrue(newState.isMeasuringMode)
+        assertEquals(ChartTool.MEASURE, newState.activeTool)
     }
 
     private fun trendLine() =

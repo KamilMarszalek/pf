@@ -151,20 +151,20 @@ fun StockCharts(
                     }
                 }
                 Row {
-                    IconButton(onClick = { dispatch(StockChartAction.ToggleDrawingMode) }) {
+                    IconButton(onClick = { dispatch(StockChartAction.ToggleDrawingTool) }) {
                         Icon(
                             Icons.Default.Edit, "Edit",
-                            tint = if (uiState.isDrawingMode) Color.Magenta else Color.Black
+                            tint = if (uiState.activeTool == ChartTool.DRAW_TREND_LINE) Color.Magenta else Color.Black
                         )
                     }
                     Spacer(Modifier.width(8.dp))
                     IconButton(onClick = {
-                        dispatch(StockChartAction.ToggleMeasuringMode)
+                        dispatch(StockChartAction.ToggleMeasureTool)
                     }) {
                         Text(
                             "%",
                             style = MaterialTheme.typography.h6,
-                            color = if (uiState.isMeasuringMode) Color.Magenta else Color.Black
+                            color = if (uiState.activeTool == ChartTool.MEASURE) Color.Magenta else Color.Black
                         )
                     }
                     Spacer(Modifier.width(8.dp))
@@ -183,33 +183,41 @@ fun StockCharts(
             // Main Chart Canvas Area
             Box(modifier = Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp)) {
                 chartState?.let { activeState ->
-                    CandlestickChart(
-                        candles = analysis.candles,
-                        chartState = activeState,
-                        visibleRange = currentVisibleRange,
-                        isDrawingMode = uiState.isDrawingMode,
-                        trendLines = uiState.trendLines,
-                        onLineAdded = { newLine -> dispatch(StockChartAction.AddTrendLine(newLine)) },
-                        interactiveModifier = Modifier
+                    val activeInteractionModifier = when (uiState.activeTool) {
+                        ChartTool.PAN -> Modifier
                             .chartDrag(
                                 chartWidthPx = uiState.chartWidthPx,
                                 visibleRange = currentVisibleRange,
                                 totalCount = totalCount,
                                 onRangeChange = updateVisibleRange,
-                                isDrawingMode = uiState.isDrawingMode || uiState.isMeasuringMode
+                                isPanDisabled = false
                             )
                             .chartZoom(
                                 visibleRange = currentVisibleRange,
                                 totalCount = totalCount,
                                 onRangeChange = updateVisibleRange
                             )
+
+                        ChartTool.DRAW_TREND_LINE -> Modifier
+
+                        ChartTool.MEASURE -> Modifier
                             .chartMeasure(
-                                isMeasuringMode = uiState.isMeasuringMode,
+                                isMeasuringMode = true,
                                 chartState = activeState,
                                 visibleRange = currentVisibleRange,
                                 paddingPx = paddingPx,
                                 onMeasureStateChanged = updateMeasureState
-                            ),
+                            )
+                    }
+
+                    CandlestickChart(
+                        candles = analysis.candles,
+                        chartState = activeState,
+                        visibleRange = currentVisibleRange,
+                        isDrawingMode = uiState.activeTool == ChartTool.DRAW_TREND_LINE,
+                        trendLines = uiState.trendLines,
+                        onLineAdded = { newLine -> dispatch(StockChartAction.AddTrendLine(newLine)) },
+                        interactiveModifier = activeInteractionModifier,
                         modifier = Modifier.fillMaxSize(),
                         measureStartIdx = currentMeasureState.startIdx,
                         measureEndIdx = currentMeasureState.endIdx,
