@@ -1,4 +1,4 @@
-package ui.ActiveRangeUtils
+package ui.activeRangeUtils
 
 enum class VisibleRange {
     NONE,

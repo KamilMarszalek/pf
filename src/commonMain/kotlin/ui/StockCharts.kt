@@ -1,15 +1,11 @@
 package ui
 
-import analysis.StockAnalysis
 import analysis.CandleTimeframe
+import analysis.StockAnalysis
 import analysis.aggregateCandles
 import analysis.analyzeCandles
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -23,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import data.Candle
 import data.TrendLine
 import data.calculateChartState
-import ui.ActiveRangeUtils.VisibleRange
-import ui.ActiveRangeUtils.detectVisibleRange
-import ui.ActiveRangeUtils.findVisibleRangeMarks
-import ui.ActiveRangeUtils.getVisibleRange
+import ui.activeRangeUtils.VisibleRange
+import ui.activeRangeUtils.detectVisibleRange
+import ui.activeRangeUtils.findVisibleRangeMarks
+import ui.activeRangeUtils.getVisibleRange
 
 @Composable
 fun StockCharts(

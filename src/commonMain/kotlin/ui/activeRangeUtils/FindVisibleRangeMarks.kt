@@ -1,4 +1,4 @@
-package ui.ActiveRangeUtils
+package ui.activeRangeUtils
 
 import data.Candle
 import java.time.LocalDate

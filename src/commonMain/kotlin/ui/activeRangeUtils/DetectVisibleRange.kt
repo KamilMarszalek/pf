@@ -1,4 +1,4 @@
-package ui.ActiveRangeUtils
+package ui.activeRangeUtils
 
 fun detectVisibleRange(
     range: IntRange,
@@ -8,7 +8,7 @@ fun detectVisibleRange(
         return VisibleRange.NONE
     }
 
-    return when(range.first) {
+    return when (range.first) {
         0 -> VisibleRange.FIVE_YEAR
         (marks.oneYearMark) -> VisibleRange.ONE_YEAR
         (marks.sixMonthsMark) -> VisibleRange.SIX_MONTHS

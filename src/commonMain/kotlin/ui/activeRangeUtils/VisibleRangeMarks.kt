@@ -1,4 +1,4 @@
-package ui.ActiveRangeUtils
+package ui.activeRangeUtils
 
 data class VisibleRangeMarks(
     val fullSize: Int,

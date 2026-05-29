@@ -1,10 +1,10 @@
-package ui.ActiveRangeUtils
+package ui.activeRangeUtils
 
 fun getVisibleRange(
     visibleRange: VisibleRange,
     marks: VisibleRangeMarks,
-) : IntRange{
-    return when(visibleRange) {
+): IntRange {
+    return when (visibleRange) {
         VisibleRange.NONE -> IntRange(0, marks.fullSize)
         VisibleRange.FIVE_YEAR -> IntRange(0, marks.fullSize)
         VisibleRange.ONE_YEAR -> IntRange(marks.oneYearMark, marks.fullSize)
