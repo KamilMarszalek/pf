@@ -35,6 +35,7 @@ The project applies functional programming principles where they fit the desktop
 - API responses are represented with the sealed `ApiResult` type instead of throwing errors into the UI layer.
 - CSV export is implemented as a pure transformation from `StockAnalysis` to `String`.
 - UI state is held at Compose boundaries and recomputed with derived state where practical. Compose-specific mutable state is kept in the UI layer.
+- `Analyzer` and `StockCharts` use immutable UI state data classes, pure reducers, and `rememberReducer` as a small Compose boundary wrapper.
 - Platform-specific mutable operations, such as saving a file through AWT, are hidden behind the `expect`/`actual`
   `saveTextFile` wrapper.
 
