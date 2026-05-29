@@ -15,9 +15,9 @@ import androidx.compose.ui.unit.dp
 fun RsiPanel(rsiData: List<Double?>, range: IntRange) {
     Column {
         Row(modifier = Modifier.padding(top = 4.dp)) {
-            Text("— 70 (overbought)", style = MaterialTheme.typography.caption, color = Color(0xFFEF5350))
+            Text("70 (overbought)", style = MaterialTheme.typography.caption, color = Color(0xFFEF5350))
             Spacer(Modifier.width(16.dp))
-            Text("— 30 (oversold)", style = MaterialTheme.typography.caption, color = Color(0xFF26A69A))
+            Text("30 (oversold)", style = MaterialTheme.typography.caption, color = Color(0xFF26A69A))
         }
         RsiChart(rsi = rsiData, visibleRange = range, modifier = Modifier.fillMaxWidth().height(200.dp))
     }
@@ -62,3 +62,4 @@ fun RsiChart(
         }
     }
 }
+
