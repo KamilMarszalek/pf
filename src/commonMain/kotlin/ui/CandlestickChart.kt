@@ -160,7 +160,7 @@ fun CandlestickChart(
 
                 val isPositive = percentageChange >= 0
                 val badgeColor = if (isPositive) Color(0xFF26A69A) else Color(0xFFEF5350)
-                val sign = if (isPositive) "up +" else "down "
+                val sign = if (isPositive) "▲ +" else "▼ "
 
                 Card(
                     backgroundColor = badgeColor.copy(alpha = 0.9f),
