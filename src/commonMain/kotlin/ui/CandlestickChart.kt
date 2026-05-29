@@ -3,12 +3,12 @@ package ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -16,10 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.Candle
@@ -48,6 +51,9 @@ fun CandlestickChart(
     val paddingPx = 30f
 
     var drawingLineState by remember { mutableStateOf(DrawingLineState()) }
+    var chartSize by remember { mutableStateOf(IntSize.Zero) }
+    var measurementBadgeSize by remember { mutableStateOf(IntSize.Zero) }
+    val density = LocalDensity.current
 
     LaunchedEffect(isDrawingMode) {
         if (!isDrawingMode) {
@@ -65,7 +71,9 @@ fun CandlestickChart(
             onLineAdded = onLineAdded
         )
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier.onSizeChanged { chartSize = it }
+    ) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -88,41 +96,48 @@ fun CandlestickChart(
             drawXAxisLabels(chartState.visibleCandles, getX, paddingPx, height, textMeasurer)
 
             if (measureStartIdx != null && measureEndIdx != null) {
-                val leftIdx = minOf(measureStartIdx, measureEndIdx)
-                val rightIdx = maxOf(measureStartIdx, measureEndIdx)
+                val measurementStart = minOf(measureStartIdx, measureEndIdx)
+                val measurementEnd = maxOf(measureStartIdx, measureEndIdx)
+                val visibleMeasurementStart = maxOf(measurementStart, visibleRange.first)
+                val visibleMeasurementEnd = minOf(measurementEnd, visibleRange.last)
+                val isMeasurementVisible = visibleMeasurementStart <= visibleMeasurementEnd
 
-                val leftX = getX(leftIdx - visibleRange.first)
-                val rightX = getX(rightIdx - visibleRange.first)
+                if (isMeasurementVisible) {
+                    val visibleLeftX = getX(visibleMeasurementStart - visibleRange.first)
+                    val visibleRightX = getX(visibleMeasurementEnd - visibleRange.first)
 
-                if (leftIdx != rightIdx) {
-                    val fillLeft = leftX.coerceIn(paddingPx, width - paddingPx)
-                    val fillRight = rightX.coerceIn(paddingPx, width - paddingPx)
-                    drawRect(
-                        color = Color.Gray.copy(alpha = 0.15f),
-                        topLeft = Offset(fillLeft, paddingPx),
-                        size = Size(fillRight - fillLeft, height - (2 * paddingPx))
-                    )
-                }
+                    if (visibleMeasurementStart != visibleMeasurementEnd) {
+                        val fillLeft = visibleLeftX.coerceIn(paddingPx, width - paddingPx)
+                        val fillRight = visibleRightX.coerceIn(paddingPx, width - paddingPx)
+                        drawRect(
+                            color = Color.Gray.copy(alpha = 0.15f),
+                            topLeft = Offset(fillLeft, paddingPx),
+                            size = Size(fillRight - fillLeft, height - (2 * paddingPx))
+                        )
+                    }
 
-                if (leftIdx in visibleRange) {
-                    drawLine(
-                        color = Color.Gray,
-                        start = Offset(leftX, paddingPx),
-                        end = Offset(leftX, height - paddingPx),
-                        strokeWidth = 2f
-                    )
-                }
+                    if (measurementStart in visibleRange) {
+                        val leftX = getX(measurementStart - visibleRange.first)
+                        drawLine(
+                            color = Color.Gray,
+                            start = Offset(leftX, paddingPx),
+                            end = Offset(leftX, height - paddingPx),
+                            strokeWidth = 2f
+                        )
+                    }
 
-                if (rightIdx in visibleRange) {
-                    drawLine(
-                        color = Color.Gray,
-                        start = Offset(rightX, paddingPx),
-                        end = Offset(rightX, height - paddingPx),
-                        strokeWidth = 2f,
-                        pathEffect = if (isMeasuringDragActive) {
-                            PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-                        } else null
-                    )
+                    if (measurementEnd in visibleRange) {
+                        val rightX = getX(measurementEnd - visibleRange.first)
+                        drawLine(
+                            color = Color.Gray,
+                            start = Offset(rightX, paddingPx),
+                            end = Offset(rightX, height - paddingPx),
+                            strokeWidth = 2f,
+                            pathEffect = if (isMeasuringDragActive) {
+                                PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                            } else null
+                        )
+                    }
                 }
             }
 
@@ -147,25 +162,42 @@ fun CandlestickChart(
             drawUserLines(trendLines, getX, getY, visibleRange)
         }
 
-        if (measureStartIdx != null && measureEndIdx != null) {
-            val leftIdx = minOf(measureStartIdx, measureEndIdx)
-            val rightIdx = maxOf(measureStartIdx, measureEndIdx)
+        if (measureStartIdx != null && measureEndIdx != null && !isMeasuringDragActive) {
+            val measurementStart = minOf(measureStartIdx, measureEndIdx)
+            val measurementEnd = maxOf(measureStartIdx, measureEndIdx)
+            val visibleMeasurementStart = maxOf(measurementStart, visibleRange.first)
+            val visibleMeasurementEnd = minOf(measurementEnd, visibleRange.last)
+            val isMeasurementVisible = visibleMeasurementStart <= visibleMeasurementEnd
 
-            val startCandle = candles.getOrNull(leftIdx)
-            val endCandle = candles.getOrNull(rightIdx)
+            val startCandle = candles.getOrNull(measurementStart)
+            val endCandle = candles.getOrNull(measurementEnd)
 
-            if (startCandle != null && endCandle != null) {
+            if (isMeasurementVisible && startCandle != null && endCandle != null) {
                 val percentageChange = calculatePriceChangePercent(startCandle, endCandle)
 
                 val isPositive = percentageChange >= 0
                 val badgeColor = if (isPositive) Color(0xFF26A69A) else Color(0xFFEF5350)
                 val sign = if (isPositive) "▲ +" else "▼ "
 
+                val badgeOffsetX = if (chartSize.width > 0 && chartState.visibleCandles.isNotEmpty()) {
+                    val availableChartWidth = chartSize.width - (2 * paddingPx)
+                    val candleWidth = availableChartWidth / chartState.visibleCandles.size
+                    val leftX = paddingPx + (visibleMeasurementStart - visibleRange.first) * candleWidth + (candleWidth / 2f)
+                    val rightX = paddingPx + (visibleMeasurementEnd - visibleRange.first) * candleWidth + (candleWidth / 2f)
+                    val centerX = (leftX + rightX) / 2f
+                    val maxBadgeX = (chartSize.width - paddingPx - measurementBadgeSize.width).coerceAtLeast(paddingPx)
+                    val badgeLeftX = (centerX - (measurementBadgeSize.width / 2f)).coerceIn(paddingPx, maxBadgeX)
+
+                    with(density) { badgeLeftX.toDp() }
+                } else {
+                    0.dp
+                }
+
                 Card(
                     backgroundColor = badgeColor.copy(alpha = 0.9f),
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp),
+                        .offset(x = badgeOffsetX, y = 16.dp)
+                        .onSizeChanged { measurementBadgeSize = it },
                     elevation = 4.dp
                 ) {
                     Text(
