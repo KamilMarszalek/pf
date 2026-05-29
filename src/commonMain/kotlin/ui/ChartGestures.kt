@@ -1,7 +1,9 @@
 package ui
 
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
@@ -9,6 +11,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntSize
 import data.ChartState
 import data.TrendLine
 
@@ -142,16 +145,13 @@ fun Modifier.drawTrendLine(
                 when {
                     change.changedToDown() -> {
                         val state = currentChartState ?: return@awaitPointerEventScope
-                        val availableW = size.width - (2 * paddingPx)
-                        val availableH = size.height - (2 * paddingPx)
-                        val step = availableW / state.visibleCandles.size
-
-                        val localIndex = ((position.x - paddingPx) / step)
-                            .toInt().coerceIn(0, state.visibleCandles.size - 1)
-                        val globalIndex = currentRange.first + localIndex
-
-                        val relativeY = (position.y - paddingPx) / availableH
-                        val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
+                        val (price, globalIndex) = calculateGlobalIndexAndPrice(
+                            size,
+                            paddingPx,
+                            state,
+                            position,
+                            currentRange
+                        )
 
                         onFirstPointChanged(globalIndex to price)
                         onCurrentTouchPosChanged(position)
@@ -170,16 +170,13 @@ fun Modifier.drawTrendLine(
                         val startPt = currentFirstPoint
 
                         if (state != null && startPt != null) {
-                            val availableW = size.width - (2 * paddingPx)
-                            val availableH = size.height - (2 * paddingPx)
-                            val step = availableW / state.visibleCandles.size
-
-                            val localIndex = ((position.x - paddingPx) / step)
-                                .toInt().coerceIn(0, state.visibleCandles.size - 1)
-                            val globalIndex = currentRange.first + localIndex
-
-                            val relativeY = (position.y - paddingPx) / availableH
-                            val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
+                            val (price, globalIndex) = calculateGlobalIndexAndPrice(
+                                size,
+                                paddingPx,
+                                state,
+                                position,
+                                currentRange
+                            )
 
                             onLineAdded(
                                 TrendLine(
@@ -218,7 +215,8 @@ fun Modifier.chartMeasure(
             val availableW = size.width - (2 * paddingPx)
             if (availableW <= 0 || state.visibleCandles.isEmpty()) return null
             val step = availableW / state.visibleCandles.size
-            return currentRange.first + ((pointerX - paddingPx) / step).toInt().coerceIn(0, state.visibleCandles.size - 1)
+            return currentRange.first + ((pointerX - paddingPx) / step).toInt()
+                .coerceIn(0, state.visibleCandles.size - 1)
         }
 
         var activeStartIdx: Int? = null
@@ -235,7 +233,13 @@ fun Modifier.chartMeasure(
             },
             onDragEnd = {
                 if (activeStartIdx != null && activeEndIdx != null) {
-                    onMeasureStateChanged(MeasureState(startIdx = activeStartIdx, endIdx = activeEndIdx, isDragging = false))
+                    onMeasureStateChanged(
+                        MeasureState(
+                            startIdx = activeStartIdx,
+                            endIdx = activeEndIdx,
+                            isDragging = false
+                        )
+                    )
                 }
             },
             onDragCancel = {
@@ -248,9 +252,40 @@ fun Modifier.chartMeasure(
                 val currentIdx = getCandleIndex(change.position.x)
                 if (activeStartIdx != null && currentIdx != null) {
                     activeEndIdx = currentIdx
-                    onMeasureStateChanged(MeasureState(startIdx = activeStartIdx, endIdx = currentIdx, isDragging = true))
+                    onMeasureStateChanged(
+                        MeasureState(
+                            startIdx = activeStartIdx,
+                            endIdx = currentIdx,
+                            isDragging = true
+                        )
+                    )
                 }
             }
         )
     }
 }
+
+private fun calculateGlobalIndexAndPrice(
+    size: IntSize,
+    paddingPx: Float,
+    state: ChartState,
+    position: Offset,
+    currentRange: IntRange
+): PriceWithIdx {
+    val availableW = size.width - (2 * paddingPx)
+    val availableH = size.height - (2 * paddingPx)
+    val step = availableW / state.visibleCandles.size
+
+    val localIndex = ((position.x - paddingPx) / step)
+        .toInt().coerceIn(0, state.visibleCandles.size - 1)
+    val globalIndex = currentRange.first + localIndex
+    val relativeY = (position.y - paddingPx) / availableH
+    val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
+    return PriceWithIdx(price, globalIndex)
+}
+
+private data class PriceWithIdx(
+    val price: Double,
+    val globalIndex: Int,
+)
+
