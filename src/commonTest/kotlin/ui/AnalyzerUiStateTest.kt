@@ -36,7 +36,7 @@ class AnalyzerUiStateTest {
 
     @Test
     fun `load success should store success app state and clear old analysis`() {
-        val candles = listOf(candle("2026-05-01"))
+        val candles = listOf(candle())
         val state = reduceAnalyzerState(
             AnalyzerUiState(currentAnalysis = fakeAnalysis()),
             AnalyzerAction.LoadSucceeded("PKO.WA", candles),
@@ -83,9 +83,9 @@ class AnalyzerUiStateTest {
             rsi = emptyList(),
         )
 
-    private fun candle(date: String) =
+    private fun candle() =
         Candle(
-            date = date,
+            date = "2026-05-01",
             open = 1.0,
             high = 1.0,
             low = 1.0,
