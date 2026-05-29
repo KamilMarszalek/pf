@@ -145,7 +145,7 @@ fun Modifier.drawTrendLine(
                 when {
                     change.changedToDown() -> {
                         val state = currentChartState ?: return@awaitPointerEventScope
-                        val (price, globalIndex) = calculateGlobalIndexAndPrice(
+                        val point = pointerPositionToChartPoint(
                             size,
                             paddingPx,
                             state,
@@ -153,7 +153,7 @@ fun Modifier.drawTrendLine(
                             currentRange
                         )
 
-                        onFirstPointChanged(globalIndex to price)
+                        onFirstPointChanged(point.candleIndex to point.price)
                         onCurrentTouchPosChanged(position)
                         change.consume()
                     }
@@ -170,7 +170,7 @@ fun Modifier.drawTrendLine(
                         val startPt = currentFirstPoint
 
                         if (state != null && startPt != null) {
-                            val (price, globalIndex) = calculateGlobalIndexAndPrice(
+                            val point = pointerPositionToChartPoint(
                                 size,
                                 paddingPx,
                                 state,
@@ -182,8 +182,8 @@ fun Modifier.drawTrendLine(
                                 TrendLine(
                                     startIndex = startPt.first,
                                     startPrice = startPt.second,
-                                    endIndex = globalIndex,
-                                    endPrice = price
+                                    endIndex = point.candleIndex,
+                                    endPrice = point.price
                                 )
                             )
                         }
@@ -265,27 +265,29 @@ fun Modifier.chartMeasure(
     }
 }
 
-private fun calculateGlobalIndexAndPrice(
+private fun pointerPositionToChartPoint(
     size: IntSize,
     paddingPx: Float,
     state: ChartState,
     position: Offset,
     currentRange: IntRange
-): PriceWithIdx {
+): ChartPoint {
     val availableW = size.width - (2 * paddingPx)
     val availableH = size.height - (2 * paddingPx)
     val step = availableW / state.visibleCandles.size
 
     val localIndex = ((position.x - paddingPx) / step)
-        .toInt().coerceIn(0, state.visibleCandles.size - 1)
+        .toInt()
+        .coerceIn(0, state.visibleCandles.size - 1)
+    
     val globalIndex = currentRange.first + localIndex
     val relativeY = (position.y - paddingPx) / availableH
     val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
-    return PriceWithIdx(price, globalIndex)
+    return ChartPoint(price, globalIndex)
 }
 
-private data class PriceWithIdx(
+private data class ChartPoint(
     val price: Double,
-    val globalIndex: Int,
+    val candleIndex: Int,
 )
 
