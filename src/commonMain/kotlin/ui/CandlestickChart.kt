@@ -61,7 +61,6 @@ fun CandlestickChart(
             chartState = chartState,
             visibleRange = visibleRange,
             paddingPx = paddingPx,
-            drawingLineState = drawingLineState,
             onDrawingLineStateChanged = { drawingLineState = it },
             onLineAdded = onLineAdded
         )

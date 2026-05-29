@@ -126,7 +126,6 @@ fun Modifier.drawTrendLine(
     chartState: ChartState?,
     visibleRange: IntRange,
     paddingPx: Float,
-    drawingLineState: DrawingLineState,
     onDrawingLineStateChanged: (DrawingLineState) -> Unit,
     onLineAdded: (TrendLine) -> Unit
 ): Modifier = composed {
@@ -295,7 +294,7 @@ private fun pointerPositionToChartPoint(
     val localIndex = ((position.x - paddingPx) / step)
         .toInt()
         .coerceIn(0, state.visibleCandles.size - 1)
-    
+
     val globalIndex = currentRange.first + localIndex
     val relativeY = (position.y - paddingPx) / availableH
     val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
