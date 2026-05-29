@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import data.StockProvider
 import data.createHttpClient
-import ui.Analizer
+import ui.Analyzer
 import ui.MeasureState
 
 @Composable
@@ -42,7 +42,7 @@ fun App() {
             }
 
             if (!comparingMode) {
-                Analizer(
+                Analyzer(
                     stockProvider,
                     scope,
                     sharedVisibleRange = null,
@@ -55,7 +55,7 @@ fun App() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
-                        Analizer(
+                        Analyzer(
                             stockProvider,
                             scope,
                             sharedVisibleRange = sharedVisibleRange,
@@ -73,7 +73,7 @@ fun App() {
                     )
 
                     Box(modifier = Modifier.weight(1f)) {
-                        Analizer(
+                        Analyzer(
                             stockProvider,
                             scope,
                             sharedVisibleRange = sharedVisibleRange,

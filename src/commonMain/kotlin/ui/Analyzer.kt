@@ -18,7 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun Analizer(
+fun Analyzer(
     stockProvider: StockProvider,
     scope: CoroutineScope,
     sharedVisibleRange: IntRange?,
