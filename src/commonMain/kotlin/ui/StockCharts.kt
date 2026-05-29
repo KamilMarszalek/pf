@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import data.Candle
 import data.calculateChartState
@@ -101,7 +100,7 @@ fun StockCharts(
             localMeasureState = newState
     }
 
-    val paddingPx = with(LocalDensity.current) { 16.dp.toPx() }
+    val paddingPx = CHART_PADDING_PX
 
     // Functional reduction of data state
     val chartState by remember(analysis, currentVisibleRange) {

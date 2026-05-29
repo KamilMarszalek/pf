@@ -48,7 +48,7 @@ fun CandlestickChart(
     if (candles.isEmpty()) return
 
     val textMeasurer = rememberTextMeasurer()
-    val paddingPx = 30f
+    val paddingPx = CHART_PADDING_PX
 
     var drawingLineState by remember { mutableStateOf(DrawingLineState()) }
     var chartSize by remember { mutableStateOf(IntSize.Zero) }

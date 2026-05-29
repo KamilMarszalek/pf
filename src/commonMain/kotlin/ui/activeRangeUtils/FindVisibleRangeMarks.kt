@@ -8,6 +8,7 @@ fun findVisibleRangeMarks(candles: List<Candle>): VisibleRangeMarks {
     if (candles.isEmpty()) return VisibleRangeMarks(0, 0, 0, 0, 0)
 
     val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+    val maxIndex = candles.lastIndex
     val lastCandleDate = LocalDate.parse(candles.last().date, formatter)
 
     fun findMarkFor(monthsBack: Long): Int {
@@ -17,7 +18,11 @@ fun findVisibleRangeMarks(candles: List<Candle>): VisibleRangeMarks {
             LocalDate.parse(it.date, formatter).isBefore(targetDate)
         }
 
-        return if (index == -1) 0 else index - 1
+        return if (index == -1) {
+            0
+        } else {
+            (index - 1).coerceIn(0, maxIndex)
+        }
     }
 
     return VisibleRangeMarks(

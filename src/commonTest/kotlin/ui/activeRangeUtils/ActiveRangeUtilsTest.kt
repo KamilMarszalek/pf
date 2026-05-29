@@ -66,6 +66,35 @@ class ActiveRangeUtilsTest {
         assertTrue(marks.oneYearMark >= 0)
     }
 
+    @Test
+    fun `visible range marks should clamp index before first candle to zero`() {
+        val marks = findVisibleRangeMarks(
+            listOf(
+                candle("2025-04-01"),
+                candle("2026-05-01"),
+            )
+        )
+
+        assertEquals(0, marks.oneYearMark)
+        assertTrue(allMarks(marks).all { it >= 0 })
+    }
+
+    @Test
+    fun `visible range marks should be safe for one candle`() {
+        val marks = findVisibleRangeMarks(listOf(candle("2026-05-01")))
+
+        assertEquals(VisibleRangeMarks(0, 0, 0, 0, 0), marks)
+    }
+
+    private fun allMarks(marks: VisibleRangeMarks): List<Int> =
+        listOf(
+            marks.fullSize,
+            marks.oneYearMark,
+            marks.sixMonthsMark,
+            marks.threeMonthsMark,
+            marks.oneMonthMark,
+        )
+
     private fun candle(date: String) =
         Candle(
             date = date,

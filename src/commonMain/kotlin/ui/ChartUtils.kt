@@ -4,6 +4,8 @@ package ui
 import androidx.compose.ui.geometry.Offset
 import kotlin.math.roundToInt
 
+const val CHART_PADDING_PX = 30f
+
 fun segmentOffsets(offsets: List<Offset?>): List<List<Offset>> =
     offsets
         .fold(emptyList<List<Offset>>() to emptyList<Offset>()) { (segments, current), point ->
