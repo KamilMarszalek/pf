@@ -1,4 +1,5 @@
 package data
+
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -36,33 +37,7 @@ class StockProvider(
     private val apiKey: String,
 ) {
     private val baseUrl = "https://financialmodelingprep.com/stable"
-    private val json  = Json {ignoreUnknownKeys = true}
-
-    // Higher-order function
-    suspend fun fetchQuote(symbol: String): ApiResult<StockQuote> = try {
-        val response = client.get(baseUrl) {
-            url {
-                appendPathSegments("profile")
-                parameters.append("symbol", symbol)
-                parameters.append("apikey", apiKey)
-            }
-            println(url)
-        }
-        val bodyString = response.bodyAsText()
-
-
-
-        if (response.status.value == 200) {
-            val quotes = json.decodeFromString<List<StockQuote>>(bodyString)
-            quotes.firstOrNull()?.let { ApiResult.Success(it) }
-                ?: ApiResult.Failure("Symbol $symbol not found")
-        } else {
-            val errorBody = runCatching { json.decodeFromString<FmpError>(bodyString) }.getOrNull()
-            ApiResult.Failure(errorBody?.message ?: "Server error ${response.status}")
-        }
-    } catch (e: Exception) {
-        ApiResult.Failure(e.message ?: "Unknown error")
-    }
+    private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun fetchCandles(symbol: String): ApiResult<List<Candle>> = try {
         val response = client.get(baseUrl) {
