@@ -121,18 +121,17 @@ fun Modifier.drawTrendLine(
     chartState: ChartState?,
     visibleRange: IntRange,
     paddingPx: Float,
-    firstPoint: Pair<Int, Double>?,
-    onFirstPointChanged: (Pair<Int, Double>?) -> Unit,
-    onCurrentTouchPosChanged: (Offset?) -> Unit,
+    drawingLineState: DrawingLineState,
+    onDrawingLineStateChanged: (DrawingLineState) -> Unit,
     onLineAdded: (TrendLine) -> Unit
 ): Modifier = composed {
-    val currentFirstPoint by rememberUpdatedState(firstPoint)
+    val currentDrawingLineState by rememberUpdatedState(drawingLineState)
     val currentRange by rememberUpdatedState(visibleRange)
     val currentChartState by rememberUpdatedState(chartState)
 
     pointerInput(isDrawingMode, chartState) {
         if (!isDrawingMode || chartState == null) {
-            onCurrentTouchPosChanged(null)
+            onDrawingLineStateChanged(DrawingLineState())
             return@pointerInput
         }
 
@@ -153,23 +152,29 @@ fun Modifier.drawTrendLine(
                             currentRange
                         )
 
-                        onFirstPointChanged(point.candleIndex to point.price)
-                        onCurrentTouchPosChanged(position)
+                        onDrawingLineStateChanged(
+                            DrawingLineState(
+                                firstPoint = point,
+                                currentTouchPos = position
+                            )
+                        )
                         change.consume()
                     }
 
                     change.pressed -> {
-                        if (currentFirstPoint != null) {
-                            onCurrentTouchPosChanged(position)
+                        if (currentDrawingLineState.firstPoint != null) {
+                            onDrawingLineStateChanged(
+                                currentDrawingLineState.copy(currentTouchPos = position)
+                            )
                             change.consume()
                         }
                     }
 
                     change.changedToUp() -> {
                         val state = currentChartState
-                        val startPt = currentFirstPoint
+                        val startPoint = currentDrawingLineState.firstPoint
 
-                        if (state != null && startPt != null) {
+                        if (state != null && startPoint != null) {
                             val point = pointerPositionToChartPoint(
                                 size,
                                 paddingPx,
@@ -180,15 +185,14 @@ fun Modifier.drawTrendLine(
 
                             onLineAdded(
                                 TrendLine(
-                                    startIndex = startPt.first,
-                                    startPrice = startPt.second,
+                                    startIndex = startPoint.candleIndex,
+                                    startPrice = startPoint.price,
                                     endIndex = point.candleIndex,
                                     endPrice = point.price
                                 )
                             )
                         }
-                        onFirstPointChanged(null)
-                        onCurrentTouchPosChanged(null)
+                        onDrawingLineStateChanged(DrawingLineState())
                         change.consume()
                     }
                 }
@@ -271,7 +275,7 @@ private fun pointerPositionToChartPoint(
     state: ChartState,
     position: Offset,
     currentRange: IntRange
-): ChartPoint {
+): DrawingPoint {
     val availableW = size.width - (2 * paddingPx)
     val availableH = size.height - (2 * paddingPx)
     val step = availableW / state.visibleCandles.size
@@ -283,11 +287,9 @@ private fun pointerPositionToChartPoint(
     val globalIndex = currentRange.first + localIndex
     val relativeY = (position.y - paddingPx) / availableH
     val price = state.priceMin + (1.0 - relativeY.toDouble()) * state.priceRange
-    return ChartPoint(price, globalIndex)
+    return DrawingPoint(
+        candleIndex = globalIndex,
+        price = price
+    )
 }
-
-private data class ChartPoint(
-    val price: Double,
-    val candleIndex: Int,
-)
 

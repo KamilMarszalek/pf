@@ -47,13 +47,11 @@ fun CandlestickChart(
     val textMeasurer = rememberTextMeasurer()
     val paddingPx = 30f
 
-    var firstPoint by remember { mutableStateOf<Pair<Int, Double>?>(null) }
-    var currentTouchPos by remember { mutableStateOf<Offset?>(null) }
+    var drawingLineState by remember { mutableStateOf(DrawingLineState()) }
 
     LaunchedEffect(isDrawingMode) {
         if (!isDrawingMode) {
-            firstPoint = null
-            currentTouchPos = null
+            drawingLineState = DrawingLineState()
         }
     }
 
@@ -63,9 +61,8 @@ fun CandlestickChart(
             chartState = chartState,
             visibleRange = visibleRange,
             paddingPx = paddingPx,
-            firstPoint = firstPoint,
-            onFirstPointChanged = { firstPoint = it },
-            onCurrentTouchPosChanged = { currentTouchPos = it },
+            drawingLineState = drawingLineState,
+            onDrawingLineStateChanged = { drawingLineState = it },
             onLineAdded = onLineAdded
         )
 
@@ -143,8 +140,10 @@ fun CandlestickChart(
                 drawIndicatorLine(chartState.visibleEma, Color(0xFF42A5F5), getX, getY)
             }
 
-            if (firstPoint != null && currentTouchPos != null) {
-                drawGhostLine(firstPoint!!, currentTouchPos!!, getX, getY, visibleRange)
+            val ghostStart = drawingLineState.firstPoint
+            val ghostEnd = drawingLineState.currentTouchPos
+            if (ghostStart != null && ghostEnd != null) {
+                drawGhostLine(ghostStart, ghostEnd, getX, getY, visibleRange)
             }
             drawUserLines(trendLines, getX, getY, visibleRange)
         }
@@ -157,11 +156,7 @@ fun CandlestickChart(
             val endCandle = candles.getOrNull(rightIdx)
 
             if (startCandle != null && endCandle != null) {
-                val priceStart = (startCandle.high + startCandle.low + startCandle.close) / 3.0
-                val priceEnd = (endCandle.high + endCandle.low + endCandle.close) / 3.0
-
-                val priceChange = priceEnd - priceStart
-                val percentageChange = if (priceStart != 0.0) (priceChange / priceStart) * 100 else 0.0
+                val percentageChange = calculatePriceChangePercent(startCandle, endCandle)
 
                 val isPositive = percentageChange >= 0
                 val badgeColor = if (isPositive) Color(0xFF26A69A) else Color(0xFFEF5350)
@@ -210,14 +205,14 @@ fun DrawScope.drawUserLines(
 }
 
 fun DrawScope.drawGhostLine(
-    firstPoint: Pair<Int, Double>,
+    firstPoint: DrawingPoint,
     currentTouchPos: Offset,
     getX: (Int) -> Float,
     getY: (Double) -> Float,
     visibleRange: IntRange
 ) {
-    val startX = getX(firstPoint.first - visibleRange.first)
-    val startY = getY(firstPoint.second)
+    val startX = getX(firstPoint.candleIndex - visibleRange.first)
+    val startY = getY(firstPoint.price)
 
     drawLine(
         color = Color.Yellow.copy(alpha = 0.2f),
