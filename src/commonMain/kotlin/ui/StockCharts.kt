@@ -17,10 +17,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import data.Candle
 import data.calculateChartState
-import ui.activeRangeUtils.VisibleRange
-import ui.activeRangeUtils.detectVisibleRange
-import ui.activeRangeUtils.findVisibleRangeMarks
-import ui.activeRangeUtils.getVisibleRange
+import ui.activeRangeUtils.*
 
 @Composable
 fun StockCharts(
@@ -29,6 +26,12 @@ fun StockCharts(
     modifier: Modifier = Modifier,
     sharedVisibleRange: IntRange? = null,
     onVisibleRangeChange: (IntRange) -> Unit = {},
+    sharedVisibleDateRange: VisibleDateRange? = null,
+    onVisibleDateRangeChange: (VisibleDateRange) -> Unit = {},
+    sharedCandleTimeframe: CandleTimeframe? = null,
+    onCandleTimeframeChange: (CandleTimeframe) -> Unit = {},
+    showRangeControls: Boolean = true,
+    showTimeframeControls: Boolean = true,
     sharedMeasureState: MeasureState? = null,
     onMeasureRangeChange: (MeasureState) -> Unit = {}
 ) {
@@ -37,8 +40,10 @@ fun StockCharts(
         reducer = ::reduceStockChartState
     )
 
-    val displayCandles by remember(candles, uiState.candleTimeframe) {
-        derivedStateOf { aggregateCandles(candles, uiState.candleTimeframe) }
+    val currentCandleTimeframe = sharedCandleTimeframe ?: uiState.candleTimeframe
+
+    val displayCandles by remember(candles, currentCandleTimeframe) {
+        derivedStateOf { aggregateCandles(candles, currentCandleTimeframe) }
     }
     val totalCount = displayCandles.size
     if (totalCount == 0) return
@@ -61,14 +66,29 @@ fun StockCharts(
     var localVisibleRange by remember(totalCount) {
         mutableStateOf(initialVisibleRange(totalCount, preferredCount = 100))
     }
-    val isSharedMode = sharedVisibleRange != null && sharedVisibleRange != IntRange.EMPTY
-    val currentVisibleRange = if (isSharedMode) sharedVisibleRange else localVisibleRange
+    val isSharedDateMode = sharedCandleTimeframe != null || sharedVisibleDateRange != null
+    val isSharedIndexMode = !isSharedDateMode && sharedVisibleRange != null && sharedVisibleRange != IntRange.EMPTY
+    val currentVisibleRange = when {
+        isSharedDateMode -> sharedVisibleDateRange
+            ?.let { dateRangeToVisibleRange(displayCandles, it) }
+            ?: localVisibleRange
+
+        isSharedIndexMode -> sharedVisibleRange
+        else -> localVisibleRange
+    }
 
     val updateVisibleRange: (IntRange) -> Unit = { newRange ->
-        if (isSharedMode)
-            onVisibleRangeChange(newRange)
-        else
-            localVisibleRange = newRange
+        when {
+            isSharedDateMode ->
+                visibleRangeToDateRange(displayCandles, newRange)
+                    ?.let(onVisibleDateRangeChange)
+
+            isSharedIndexMode ->
+                onVisibleRangeChange(newRange)
+
+            else ->
+                localVisibleRange = newRange
+        }
     }
 
     val visibleRangeMarks = remember(analysis.candles) { findVisibleRangeMarks(analysis.candles) }
@@ -87,6 +107,13 @@ fun StockCharts(
 
     if (sharedVisibleRange == IntRange.EMPTY) {
         SideEffect { onVisibleRangeChange(initialVisibleRange(totalCount, preferredCount = 100)) }
+    }
+
+    if (isSharedDateMode && sharedVisibleDateRange == null && showRangeControls) {
+        SideEffect {
+            visibleRangeToDateRange(displayCandles, localVisibleRange)
+                ?.let(onVisibleDateRangeChange)
+        }
     }
 
     // Measure State Management
@@ -111,7 +138,12 @@ fun StockCharts(
     val visibleRangeButton: @Composable (VisibleRange, String) -> Unit = { range, text ->
         IconButton(
             onClick = {
-                updateVisibleRange(getVisibleRange(range, visibleRangeMarks))
+                if (isSharedDateMode) {
+                    presetVisibleRangeToDateRange(analysis.candles, range)
+                        ?.let(onVisibleDateRangeChange)
+                } else {
+                    updateVisibleRange(getVisibleRange(range, visibleRangeMarks))
+                }
             }) {
             Text(
                 text = text,
@@ -132,22 +164,38 @@ fun StockCharts(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row {
-                    visibleRangeButton(VisibleRange.FIVE_YEAR, "5Y")
-                    visibleRangeButton(VisibleRange.ONE_YEAR, "1Y")
-                    visibleRangeButton(VisibleRange.SIX_MONTHS, "6M")
-                    visibleRangeButton(VisibleRange.THREE_MONTHS, "3M")
-                    visibleRangeButton(VisibleRange.ONE_MONTH, "1M")
+                if (showRangeControls) {
+                    Row {
+                        visibleRangeButton(VisibleRange.FIVE_YEAR, "5Y")
+                        visibleRangeButton(VisibleRange.ONE_YEAR, "1Y")
+                        visibleRangeButton(VisibleRange.SIX_MONTHS, "6M")
+                        visibleRangeButton(VisibleRange.THREE_MONTHS, "3M")
+                        visibleRangeButton(VisibleRange.ONE_MONTH, "1M")
+                    }
+                } else {
+                    Spacer(Modifier.width(1.dp))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CandleTimeframe.entries.forEach { timeframe ->
-                        TextButton(onClick = { dispatch(StockChartAction.SetCandleTimeframe(timeframe)) }) {
-                            Text(
-                                text = timeframe.label,
-                                color = if (uiState.candleTimeframe == timeframe) Color.Magenta else Color.Black
-                            )
+                if (showTimeframeControls) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CandleTimeframe.entries.forEach { timeframe ->
+                            TextButton(
+                                onClick = {
+                                    if (sharedCandleTimeframe != null) {
+                                        onCandleTimeframeChange(timeframe)
+                                    } else {
+                                        dispatch(StockChartAction.SetCandleTimeframe(timeframe))
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = timeframe.label,
+                                    color = if (currentCandleTimeframe == timeframe) Color.Magenta else Color.Black
+                                )
+                            }
                         }
                     }
+                } else {
+                    Spacer(Modifier.width(1.dp))
                 }
                 Row {
                     IconButton(onClick = { dispatch(StockChartAction.ToggleDrawingTool) }) {

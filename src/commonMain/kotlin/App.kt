@@ -7,10 +7,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import analysis.CandleTimeframe
 import data.StockProvider
 import data.createHttpClient
 import ui.Analyzer
 import ui.MeasureState
+import ui.activeRangeUtils.VisibleDateRange
 
 @Composable
 fun App() {
@@ -19,7 +21,8 @@ fun App() {
 
     var comparingMode by remember { mutableStateOf(false) }
 
-    var sharedVisibleRange by remember { mutableStateOf(IntRange.EMPTY) }
+    var sharedVisibleDateRange by remember { mutableStateOf<VisibleDateRange?>(null) }
+    var sharedCandleTimeframe by remember { mutableStateOf(CandleTimeframe.DAILY) }
     var sharedMeasureState by remember { mutableStateOf(MeasureState()) }
 
     MaterialTheme {
@@ -47,6 +50,12 @@ fun App() {
                     scope,
                     sharedVisibleRange = null,
                     onVisibleRangeChange = {},
+                    sharedVisibleDateRange = null,
+                    onVisibleDateRangeChange = {},
+                    sharedCandleTimeframe = null,
+                    onCandleTimeframeChange = {},
+                    showRangeControls = true,
+                    showTimeframeControls = true,
                     sharedMeasureState = null,
                     onMeasureStateChange = {}
                 )
@@ -58,8 +67,14 @@ fun App() {
                         Analyzer(
                             stockProvider,
                             scope,
-                            sharedVisibleRange = sharedVisibleRange,
-                            onVisibleRangeChange = { sharedVisibleRange = it },
+                            sharedVisibleRange = null,
+                            onVisibleRangeChange = {},
+                            sharedVisibleDateRange = sharedVisibleDateRange,
+                            onVisibleDateRangeChange = { sharedVisibleDateRange = it },
+                            sharedCandleTimeframe = sharedCandleTimeframe,
+                            onCandleTimeframeChange = { sharedCandleTimeframe = it },
+                            showRangeControls = true,
+                            showTimeframeControls = true,
                             sharedMeasureState = sharedMeasureState,
                             onMeasureStateChange = { sharedMeasureState = it }
                         )
@@ -76,8 +91,14 @@ fun App() {
                         Analyzer(
                             stockProvider,
                             scope,
-                            sharedVisibleRange = sharedVisibleRange,
-                            onVisibleRangeChange = { sharedVisibleRange = it },
+                            sharedVisibleRange = null,
+                            onVisibleRangeChange = {},
+                            sharedVisibleDateRange = sharedVisibleDateRange,
+                            onVisibleDateRangeChange = { sharedVisibleDateRange = it },
+                            sharedCandleTimeframe = sharedCandleTimeframe,
+                            onCandleTimeframeChange = { sharedCandleTimeframe = it },
+                            showRangeControls = false,
+                            showTimeframeControls = false,
                             sharedMeasureState = sharedMeasureState,
                             onMeasureStateChange = { sharedMeasureState = it }
                         )

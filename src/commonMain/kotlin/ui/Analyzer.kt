@@ -1,6 +1,7 @@
 package ui
 
 import analysis.exportAnalysisToCsv
+import analysis.CandleTimeframe
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.OutlinedTextField
@@ -15,6 +16,7 @@ import file.SaveFileResult
 import file.saveTextFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import ui.activeRangeUtils.VisibleDateRange
 
 @Composable
 fun Analyzer(
@@ -22,6 +24,12 @@ fun Analyzer(
     scope: CoroutineScope,
     sharedVisibleRange: IntRange?,
     onVisibleRangeChange: (IntRange) -> Unit,
+    sharedVisibleDateRange: VisibleDateRange? = null,
+    onVisibleDateRangeChange: (VisibleDateRange) -> Unit = {},
+    sharedCandleTimeframe: CandleTimeframe? = null,
+    onCandleTimeframeChange: (CandleTimeframe) -> Unit = {},
+    showRangeControls: Boolean = true,
+    showTimeframeControls: Boolean = true,
     sharedMeasureState: MeasureState?,
     onMeasureStateChange: (MeasureState) -> Unit,
 ) {
@@ -117,6 +125,12 @@ fun Analyzer(
                     modifier = Modifier.fillMaxWidth(),
                     sharedVisibleRange = sharedVisibleRange,
                     onVisibleRangeChange = onVisibleRangeChange,
+                    sharedVisibleDateRange = sharedVisibleDateRange,
+                    onVisibleDateRangeChange = onVisibleDateRangeChange,
+                    sharedCandleTimeframe = sharedCandleTimeframe,
+                    onCandleTimeframeChange = onCandleTimeframeChange,
+                    showRangeControls = showRangeControls,
+                    showTimeframeControls = showTimeframeControls,
                     sharedMeasureState = sharedMeasureState,
                     onMeasureRangeChange = onMeasureStateChange,
                 )
