@@ -66,8 +66,11 @@ src/
     Main.kt                        Desktop entry point and window setup
     file/FileSaver.desktop.kt      Desktop file-save implementation
   commonTest/kotlin/
-    analysis/                      CSV export tests
+    analysis/                      Analysis/statistics, candle aggregation, and CSV export tests
+    data/                          Chart state calculation tests
     indicators/                    Indicator tests
+    ui/                            UI reducer/state-transition and chart helper tests
+    ui/activeRangeUtils/           Visible range and date range helper tests
 ```
 
 ## Setup
