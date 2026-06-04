@@ -92,19 +92,13 @@ fun StockCharts(
     }
 
     val visibleRangeMarks = remember(analysis.candles) { findVisibleRangeMarks(analysis.candles) }
-    var visibleRangeEnum by remember {
-        mutableStateOf(
-            detectVisibleRange(
-                currentVisibleRange,
-                visibleRangeMarks
-            )
-        )
-    }
 
-    LaunchedEffect(currentVisibleRange, visibleRangeMarks) {
-        visibleRangeEnum = detectVisibleRange(currentVisibleRange, visibleRangeMarks)
+    val visibleRangeEnum by remember(currentVisibleRange, visibleRangeMarks) {
+        derivedStateOf {
+            detectVisibleRange(currentVisibleRange, visibleRangeMarks)
+        }
     }
-
+    
     if (sharedVisibleRange == IntRange.EMPTY) {
         SideEffect { onVisibleRangeChange(initialVisibleRange(totalCount, preferredCount = 100)) }
     }
