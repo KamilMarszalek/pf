@@ -10,12 +10,14 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
@@ -72,11 +74,14 @@ fun CandlestickChart(
         )
 
     Box(
-        modifier = modifier.onSizeChanged { chartSize = it }
+        modifier = modifier
+            .clipToBounds()
+            .onSizeChanged { chartSize = it }
     ) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                .clipToBounds()
                 .then(if (isDrawingMode) drawingModifier else interactiveModifier)
         ) {
             val width = size.width
@@ -156,10 +161,17 @@ fun CandlestickChart(
 
             val ghostStart = drawingLineState.firstPoint
             val ghostEnd = drawingLineState.currentTouchPos
-            if (ghostStart != null && ghostEnd != null) {
-                drawGhostLine(ghostStart, ghostEnd, getX, getY, visibleRange)
+            clipRect(
+                left = paddingPx,
+                top = paddingPx,
+                right = width - paddingPx,
+                bottom = height - paddingPx
+            ) {
+                if (ghostStart != null && ghostEnd != null) {
+                    drawGhostLine(ghostStart, ghostEnd, getX, getY, visibleRange)
+                }
+                drawUserLines(trendLines, getX, getY, visibleRange)
             }
-            drawUserLines(trendLines, getX, getY, visibleRange)
         }
 
         if (measureStartIdx != null && measureEndIdx != null && !isMeasuringDragActive) {
