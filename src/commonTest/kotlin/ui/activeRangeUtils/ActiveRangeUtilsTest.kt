@@ -146,6 +146,59 @@ class ActiveRangeUtilsTest {
     }
 
     @Test
+    fun `visible range to date range should clamp partially out of bounds indexes`() {
+        val candles = listOf(
+            candle("2026-03-01"),
+            candle("2026-04-01"),
+            candle("2026-05-01"),
+        )
+
+        assertEquals(
+            VisibleDateRange(
+                startDate = LocalDate.parse("2026-03-01"),
+                endDate = LocalDate.parse("2026-04-01"),
+            ),
+            visibleRangeToDateRange(candles, -5..1),
+        )
+        assertEquals(
+            VisibleDateRange(
+                startDate = LocalDate.parse("2026-04-01"),
+                endDate = LocalDate.parse("2026-05-01"),
+            ),
+            visibleRangeToDateRange(candles, 1..99),
+        )
+    }
+
+    @Test
+    fun `visible range to date range should return null for empty range`() {
+        val candles = listOf(candle("2026-03-01"))
+
+        assertNull(visibleRangeToDateRange(candles, IntRange.EMPTY))
+    }
+
+    @Test
+    fun `date range to visible range should handle unsorted candles`() {
+        val candles = listOf(
+            candle("2026-05-01"),
+            candle("2026-03-01"),
+            candle("2026-04-01"),
+        )
+        val range = assertNotNull(
+            dateRangeToVisibleRange(
+                candles,
+                VisibleDateRange(
+                    startDate = LocalDate.parse("2026-04-01"),
+                    endDate = LocalDate.parse("2026-05-01"),
+                )
+            )
+        )
+
+        assertEquals(1..2, range)
+        assertTrue(range.first >= 0)
+        assertTrue(range.last >= 0)
+    }
+
+    @Test
     fun `should return null when date range has no overlap`() {
         val candles = listOf(
             candle("2026-03-01"),

@@ -51,25 +51,65 @@ class AnalyzerUiStateTest {
     @Test
     fun `load failure should store error and clear analysis`() {
         val state = reduceAnalyzerState(
-            AnalyzerUiState(currentAnalysis = fakeAnalysis()),
+            AnalyzerUiState(
+                exportMessage = "saved",
+                currentAnalysis = fakeAnalysis(),
+            ),
             AnalyzerAction.LoadFailed("Network error"),
         )
 
         val appState = assertIs<AppState.Error>(state.appState)
         assertEquals("Network error", appState.message)
         assertNull(state.currentAnalysis)
+        assertEquals("saved", state.exportMessage)
     }
 
     @Test
-    fun `validation failure should store error and clear export message`() {
+    fun `set current analysis should store analysis`() {
+        val analysis = fakeAnalysis()
+
+        val state = reduceAnalyzerState(
+            AnalyzerUiState(),
+            AnalyzerAction.SetCurrentAnalysis(analysis),
+        )
+
+        assertEquals(analysis, state.currentAnalysis)
+    }
+
+    @Test
+    fun `set export message should store message`() {
+        val state = reduceAnalyzerState(
+            AnalyzerUiState(),
+            AnalyzerAction.SetExportMessage("saved"),
+        )
+
+        assertEquals("saved", state.exportMessage)
+    }
+
+    @Test
+    fun `set export message should clear message`() {
         val state = reduceAnalyzerState(
             AnalyzerUiState(exportMessage = "saved"),
+            AnalyzerAction.SetExportMessage(null),
+        )
+
+        assertNull(state.exportMessage)
+    }
+
+    @Test
+    fun `validation failure should store error and clear export message and analysis`() {
+        val state = reduceAnalyzerState(
+            AnalyzerUiState(
+                exportMessage = "saved",
+                currentAnalysis = fakeAnalysis(),
+            ),
             AnalyzerAction.ValidationFailed("Ticker cannot be empty"),
         )
 
         val appState = assertIs<AppState.Error>(state.appState)
         assertEquals("Ticker cannot be empty", appState.message)
         assertNull(state.exportMessage)
+        assertNull(state.currentAnalysis)
     }
 
     private fun fakeAnalysis() =
